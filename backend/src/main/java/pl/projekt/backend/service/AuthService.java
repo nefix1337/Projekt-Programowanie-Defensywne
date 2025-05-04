@@ -3,6 +3,7 @@ package pl.projekt.backend.service;
 import pl.projekt.backend.dto.AuthResponse;
 import pl.projekt.backend.dto.LoginRequest;
 import pl.projekt.backend.dto.RegisterRequest;
+import pl.projekt.backend.dto.TotpRequest;
 import pl.projekt.backend.model.Role;
 import pl.projekt.backend.model.User;
 import pl.projekt.backend.repository.UserRepository;
@@ -85,9 +86,10 @@ public class AuthService {
                 .build();
     }
 
-    public AuthResponse verify2FA(String code) {
-        User user = getCurrentUser();
-        if (totpService.verifyCode(code, user.getTwoFactorSecret())) {
+    public AuthResponse verify2FA(TotpRequest request) {
+        User user  = userRepository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+        if (totpService.verifyCode(request.getTotpCode(), user.getTwoFactorSecret())) {
             user.setTwoFactorEnabled(true);
             userRepository.save(user);
 

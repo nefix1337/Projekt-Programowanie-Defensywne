@@ -9,4 +9,5 @@ public class AuthResponse {
     private String token;
     private boolean requires2FA;
     private String qrCodeImage;
+    private String role;
 }

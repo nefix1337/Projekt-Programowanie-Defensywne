@@ -4,6 +4,7 @@ package pl.projekt.backend.controller;
 import pl.projekt.backend.dto.AuthResponse;
 import pl.projekt.backend.dto.LoginRequest;
 import pl.projekt.backend.dto.RegisterRequest;
+import pl.projekt.backend.dto.TotpRequest;
 import pl.projekt.backend.service.AuthService;
 
 import jakarta.validation.Valid;
@@ -34,7 +35,7 @@ public class AuthController {
     }
 
     @PostMapping("/2fa/verify")
-    public ResponseEntity<AuthResponse> verify2FA(@RequestParam String code) {
-        return ResponseEntity.ok(authService.verify2FA(code));
+    public ResponseEntity<AuthResponse> verify2FA(@RequestBody TotpRequest request) {
+        return ResponseEntity.ok(authService.verify2FA(request));
     }
 }
