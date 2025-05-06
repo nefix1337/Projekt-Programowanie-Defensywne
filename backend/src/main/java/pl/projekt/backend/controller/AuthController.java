@@ -12,9 +12,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.tags.Tag;
+
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Dane", description = "Endpointy logowania i rejestracji")
 public class AuthController {
 
     private final AuthService authService;
@@ -24,6 +29,8 @@ public class AuthController {
         return ResponseEntity.ok(authService.register(request));
     }
 
+    @Operation(summary = "Logowanie")
+    @ApiResponse(responseCode = "201", description = "Zalogowano pomyślnie")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));

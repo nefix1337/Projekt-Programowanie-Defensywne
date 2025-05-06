@@ -1,19 +1,19 @@
-import React, { useState } from 'react';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { useAuth } from '@/auth/AuthProvider';
+import { useState } from "react";
+import { useAuth } from "@/auth/AuthProvider";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 const Register = () => {
   const { register } = useAuth();
   const [formData, setFormData] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
+    firstName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
   });
-  const [error, setError] = useState(null);
+  const [error, setError] = useState("");
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -23,7 +23,7 @@ const Register = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      setError('Passwords do not match');
+      setError("Hasła nie są zgodne");
       return;
     }
 
@@ -34,84 +34,69 @@ const Register = () => {
         formData.email,
         formData.password
       );
-      console.log('Registration successful:', response);
+      console.log("Rejestracja zakończona sukcesem:", response);
     } catch (err) {
-      console.error('Registration failed:', err);
-      setError('Registration failed. Please try again.');
+      console.error("Rejestracja nie powiodła się:", err);
+      setError("Rejestracja nie powiodła się. Spróbuj ponownie.");
     }
   };
 
   return (
     <div className="flex justify-center items-center w-screen h-screen">
-      <div className="w-full max-w-md p-8 space-y-6 bg-white rounded-lg shadow-md">
-        <h2 className="text-2xl font-bold text-center">Create an Account</h2>
-        {error && <p className="text-red-500 text-center">{error}</p>}
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <Label htmlFor="firstName">First Name</Label>
+      <Card className="w-full max-w-md p-6">
+        <CardContent>
+          <h2 className="text-2xl font-bold mb-4 text-center">Rejestracja</h2>
+          <form onSubmit={handleSubmit} className="flex flex-col gap-4">
             <Input
               type="text"
               id="firstName"
               name="firstName"
               value={formData.firstName}
               onChange={handleChange}
-              placeholder="Enter your first name"
+              placeholder="Imię"
               required
             />
-          </div>
-          <div>
-            <Label htmlFor="lastName">Last Name</Label>
             <Input
               type="text"
               id="lastName"
               name="lastName"
               value={formData.lastName}
               onChange={handleChange}
-              placeholder="Enter your last name"
+              placeholder="Nazwisko"
               required
             />
-          </div>
-          <div>
-            <Label htmlFor="email">Email</Label>
             <Input
               type="email"
               id="email"
               name="email"
               value={formData.email}
               onChange={handleChange}
-              placeholder="Enter your email"
+              placeholder="Email"
               required
             />
-          </div>
-          <div>
-            <Label htmlFor="password">Password</Label>
             <Input
               type="password"
               id="password"
               name="password"
               value={formData.password}
               onChange={handleChange}
-              placeholder="Enter your password"
+              placeholder="Hasło"
               required
             />
-          </div>
-          <div>
-            <Label htmlFor="confirmPassword">Confirm Password</Label>
             <Input
               type="password"
               id="confirmPassword"
               name="confirmPassword"
               value={formData.confirmPassword}
               onChange={handleChange}
-              placeholder="Confirm your password"
+              placeholder="Potwierdź hasło"
               required
             />
-          </div>
-          <Button type="submit" className="w-full">
-            Register
-          </Button>
-        </form>
-      </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <Button type="submit">Zarejestruj się</Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 };

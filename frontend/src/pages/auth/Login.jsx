@@ -19,9 +19,14 @@ const Login = () => {
     try {
       const result = await login(email, password);
       if (result.requires2FA) {
-        setRequires2FA(true); 
+        setRequires2FA(true);
       } else {
-        navigate("/dashboard");
+      
+        if (result.role === "ROLE_ADMIN") {
+          navigate("/admin");
+        } else {
+          navigate("/dashboard");
+        }
       }
     } catch (err) {
       setError("Nieprawidłowe dane logowania");

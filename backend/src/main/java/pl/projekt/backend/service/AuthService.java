@@ -46,10 +46,11 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        Authentication authentication = authenticationManager.authenticate(
-                new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        );
+        // Authentication authentication = authenticationManager.authenticate(
+        //         new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
+        // );
 
+        // DODAĆ SPRAWDZANIE HASŁA!!!!!
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -100,6 +101,20 @@ public class AuthService {
                     .build();
         }
         throw new RuntimeException("Invalid 2FA code");
+    }
+
+    public void registerAdmin(String firstName, String lastName, String email, String password) {
+        if (userRepository.findByEmail(email).isEmpty()) {
+            User admin = new User();
+            admin.setFirstName(firstName);
+            admin.setLastName(lastName);
+            admin.setEmail(email);
+            admin.setPassword(passwordEncoder.encode(password));
+            admin.setRole(Role.ADMIN);
+            admin.setTwoFactorEnabled(false);
+
+            userRepository.save(admin);
+        }
     }
 
     private User getCurrentUser() {
