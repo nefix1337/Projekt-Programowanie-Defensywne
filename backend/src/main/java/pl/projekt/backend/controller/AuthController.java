@@ -19,28 +19,31 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@Tag(name = "Dane", description = "Endpointy logowania i rejestracji")
+@Tag(name = "Logowanie", description = "Endpointy logowania i rejestracji")
 public class AuthController {
 
     private final AuthService authService;
 
+    @Operation(summary = "Rejestracja")
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(@Valid @RequestBody RegisterRequest request) {
         return ResponseEntity.ok(authService.register(request));
     }
 
     @Operation(summary = "Logowanie")
-    @ApiResponse(responseCode = "201", description = "Zalogowano pomyślnie")
+    // @ApiResponse(responseCode = "201", description = "Zalogowano pomyślnie")
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
         return ResponseEntity.ok(authService.login(request));
     }
 
+    @Operation(summary = "Włączanie 2FA")
     @PostMapping("/2fa/enable")
     public ResponseEntity<AuthResponse> enable2FA() {
         return ResponseEntity.ok(authService.enable2FA());
     }
 
+    @Operation(summary = "Weryfikacja 2FA")
     @PostMapping("/2fa/verify")
     public ResponseEntity<AuthResponse> verify2FA(@RequestBody TotpRequest request) {
         return ResponseEntity.ok(authService.verify2FA(request));
