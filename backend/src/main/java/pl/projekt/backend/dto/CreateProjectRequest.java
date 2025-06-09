@@ -6,5 +6,6 @@ import lombok.Data;
 public class CreateProjectRequest {
     private String name;
     private String description;
-    private String status; // Możemy użyć String, aby przesyłać status jako tekst
+    private String status;
+    private String icon;
 }

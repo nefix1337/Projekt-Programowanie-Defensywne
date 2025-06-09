@@ -1,5 +1,7 @@
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings } from "lucide-react";
+import { Settings, FolderPlus, LayoutDashboard } from "lucide-react";
+import api from "@/api/axiosInstance";
 import {
   useSidebar,
   Sidebar,
@@ -18,10 +20,28 @@ import { useAuth } from "@/auth/AuthProvider";
 
 const SidebarRender = () => {
   const { state } = useSidebar();
-  const { userData } = useAuth(); 
+  const { user, userData, getToken } = useAuth();
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  
-  if (!userData) {
+  useEffect(() => {
+    const fetchProjects = async () => {
+      try {
+        const response = await api.get("/projects", {
+          headers: { Authorization: `Bearer ${getToken()}` }
+        });
+        setProjects(response.data);
+      } catch (error) {
+        console.error("Error fetching projects:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProjects();
+  }, [getToken]);
+
+  if (!user || loading) {
     return <div>Loading...</div>;
   }
 
@@ -41,11 +61,69 @@ const SidebarRender = () => {
               <SidebarMenu>
                 <SidebarMenuItem className="mt-2 h-10">
                   <SidebarMenuButton asChild>
-                    <a>
-                      <span>Dashboard</span>
-                    </a>
+                    <Link to="/dashboard">
+                      <div className="flex items-center gap-2">
+                        <LayoutDashboard className="h-4 w-4" />
+                        <span>Dashboard</span>
+                      </div>
+                    </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {/* Projects List */}
+                <div className="mt-4">
+                  <div className="px-3 text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    Projekty
+                  </div>
+                  {projects.map((project) => (
+                    <SidebarMenuItem key={project.id} className="mt-1 h-10">
+                      <SidebarMenuButton asChild>
+                        <Link to={`/dashboard/projects/${project.id}`}>
+                          {state === "expanded" ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">{project.icon}</span>
+                              <span className="truncate">{project.name}</span>
+                            </div>
+                          ) : (
+                            <Tooltip>
+                              <TooltipTrigger>
+                                <span className="text-xl">{project.icon}</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="right">
+                                {project.name}
+                              </TooltipContent>
+                            </Tooltip>
+                          )}
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </div>
+
+                {/* Add Project button for MANAGER role */}
+                {user.role === "ROLE_MANAGER" && (
+                  <SidebarMenuItem className="mt-4 h-10">
+                    <SidebarMenuButton asChild>
+                      <Link to="/dashboard/projects/new">
+                        {state === "expanded" ? (
+                          <div className="flex items-center gap-2">
+                            <FolderPlus className="h-4 w-4" />
+                            <span>Dodaj projekt</span>
+                          </div>
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <FolderPlus className="h-4 w-4" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                              Dodaj projekt
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

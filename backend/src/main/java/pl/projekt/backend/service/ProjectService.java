@@ -42,6 +42,7 @@ public class ProjectService {
     project.setName(request.getName());
     project.setDescription(request.getDescription());
     project.setStatus(ProjectStatus.valueOf(request.getStatus().toUpperCase()));
+    project.setIcon(request.getIcon());
     project.setCreatedBy(currentUser);
 
     return projectRepository.save(project);

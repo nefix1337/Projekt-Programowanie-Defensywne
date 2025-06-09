@@ -46,4 +46,7 @@ public class Project {
     @OneToMany(mappedBy = "project")
     private List<Task> tasks;
 
+    @Column(name = "icon", length = 8)
+    private String icon;
+
 }

@@ -2,6 +2,7 @@ package pl.projekt.backend.controller;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
@@ -37,18 +38,21 @@ public class ProjectController {
 
     @Operation(summary = "Tworzenie nowego projektu")
     @PostMapping
-public ResponseEntity<Project> createProject(@RequestBody CreateProjectRequest request) {
-    return ResponseEntity.ok(projectService.createProject(request));
-}
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<Project> createProject(@RequestBody CreateProjectRequest request) {
+        return ResponseEntity.ok(projectService.createProject(request));
+    }
 
-@Operation(summary = "Aktualizacja projektu")
+    @Operation(summary = "Aktualizacja projektu")
     @PutMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Project> updateProject(@PathVariable UUID id, @RequestBody Project project) {
         return ResponseEntity.ok(projectService.updateProject(id, project));
     }
 
     @Operation(summary = "Usuwanie projektu")
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<Void> deleteProject(@PathVariable UUID id) {
         projectService.deleteProject(id);
         return ResponseEntity.noContent().build();

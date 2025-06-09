@@ -36,7 +36,7 @@ public class JwtService {
         String role = userDetails.getAuthorities().stream()
                 .findFirst()
                 .map(GrantedAuthority::getAuthority)
-                .orElse("ROLE_USER");
+                .orElse("USER");
 
         extraClaims.put("role", role);
 

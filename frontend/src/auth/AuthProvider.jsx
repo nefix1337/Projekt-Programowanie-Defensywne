@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }) => {
       return { requires2FA: true };
     }
 
+    console.log(parseJwt(res.data.token).role)
     setAccessToken(res.data.token);
     return { requires2FA: false, role: parseJwt(res.data.token).role };
   };
