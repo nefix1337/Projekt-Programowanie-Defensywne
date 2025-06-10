@@ -30,7 +30,7 @@ public class User implements UserDetails {
     @Column(nullable = false, unique = true)
     private String email;
 
-    @Column(nullable = false)
+    @JsonIgnore
     private String password;
 
     @Enumerated(EnumType.STRING)
@@ -38,6 +38,14 @@ public class User implements UserDetails {
 
     private boolean twoFactorEnabled = false;
     private String twoFactorSecret;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "createdBy")
+    private List<Project> projects;
+
+    @JsonIgnore
+    @OneToMany(mappedBy = "assignedTo")
+    private List<Task> tasks;
 
 
     @Override

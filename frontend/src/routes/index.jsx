@@ -11,6 +11,8 @@ import Unauthorized from "../pages/Unauthorized";
 import Settings from "../pages/Settings";
 import NewProject from "../pages/projects/NewProject";
 import ProjectDetails from "../pages/projects/ProjectDetails";
+import ProjectMembers from "../pages/projects/ProjectMembers";
+import AddTask from "../pages/projects/AddTask";
 
 const Routes = () => {
   const publicRoutes = [
@@ -52,7 +54,23 @@ const Routes = () => {
         {
           path: "projects/:id",
           element: <ProjectDetails />,
-        }
+        },
+        {
+          path: "projects/:id/members",
+          element: (
+            <ProtectedRoute allowedRoles={["ROLE_MANAGER"]}>
+              <ProjectMembers />
+            </ProtectedRoute>
+          ),
+        },
+        {
+          path: "projects/:id/tasks/new",
+          element: (
+            <ProtectedRoute allowedRoles={["ROLE_MANAGER"]}>
+              <AddTask />
+            </ProtectedRoute>
+          ),
+        },
       ],
     },
     {

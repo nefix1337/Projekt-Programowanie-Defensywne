@@ -12,6 +12,10 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
+import java.util.Objects;
+
 @Data
 @NoArgsConstructor
 @Entity
@@ -40,13 +44,28 @@ public class Project {
     @Enumerated(EnumType.STRING)
     private ProjectStatus status;
 
+    @JsonIgnore 
     @OneToMany(mappedBy = "project")
     private Set<ProjectMember> members;
 
+    @JsonIgnore 
     @OneToMany(mappedBy = "project")
     private List<Task> tasks;
 
     @Column(name = "icon", length = 8)
     private String icon;
 
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Project)) return false;
+        Project project = (Project) o;
+        return id != null && id.equals(project.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(id);
+    }
 }

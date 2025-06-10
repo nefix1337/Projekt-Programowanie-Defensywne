@@ -7,6 +7,8 @@ import pl.projekt.backend.dto.UserBasicInfo;
 import pl.projekt.backend.model.User;
 import pl.projekt.backend.repository.UserRepository;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class UserService {
@@ -18,5 +20,16 @@ public class UserService {
         User user = userRepository.findByEmail(currentUserEmail)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         return new UserBasicInfo(user.getFirstName(), user.getLastName(), user.getEmail());
+    }
+
+    public List<UserBasicInfo> getAllUsers() {
+        return userRepository.findAll()
+                .stream()
+                .map(user -> new UserBasicInfo(
+                    user.getFirstName(),
+                    user.getLastName(),
+                    user.getEmail()
+                ))
+                .toList();
     }
 }

@@ -27,9 +27,16 @@ const SidebarRender = () => {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await api.get("/projects", {
-          headers: { Authorization: `Bearer ${getToken()}` }
-        });
+        let response;
+        if (user.role === "ROLE_USER") {
+          response = await api.get("/projects/my-member-projects", {
+            headers: { Authorization: `Bearer ${getToken()}` }
+          });
+        } else {
+          response = await api.get("/projects", {
+            headers: { Authorization: `Bearer ${getToken()}` }
+          });
+        }
         setProjects(response.data);
       } catch (error) {
         console.error("Error fetching projects:", error);
@@ -39,7 +46,7 @@ const SidebarRender = () => {
     };
 
     fetchProjects();
-  }, [getToken]);
+  }, [getToken, user.role]);
 
   if (!user || loading) {
     return <div>Loading...</div>;

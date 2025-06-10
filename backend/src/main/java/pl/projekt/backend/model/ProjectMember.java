@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
 import java.util.Set;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 
 @Data
@@ -31,9 +32,8 @@ public class ProjectMember {
     private User user;
 
     @Enumerated(EnumType.STRING)
-    private Role role;
+    @Column(nullable = false)
+    private ProjectRole projectRole;
 
     private LocalDateTime joinedAt;
-
-  
 }
