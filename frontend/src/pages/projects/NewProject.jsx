@@ -31,7 +31,7 @@ const NewProject = () => {
     name: "",
     description: "",
     status: "NEW",
-    icon: "💼" // Default icon
+    icon: "💼" 
   });
 
   const handleChange = (e) => {

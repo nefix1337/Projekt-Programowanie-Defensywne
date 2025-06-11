@@ -13,6 +13,7 @@ import NewProject from "../pages/projects/NewProject";
 import ProjectDetails from "../pages/projects/ProjectDetails";
 import ProjectMembers from "../pages/projects/ProjectMembers";
 import AddTask from "../pages/projects/AddTask";
+import TaskDetails from "../pages/projects/TaskDetails";
 
 const Routes = () => {
   const publicRoutes = [
@@ -70,6 +71,10 @@ const Routes = () => {
               <AddTask />
             </ProtectedRoute>
           ),
+        },
+        {
+          path: "projects/:id/tasks/:taskId",
+          element: <TaskDetails />,
         },
       ],
     },

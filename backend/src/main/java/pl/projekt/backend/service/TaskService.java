@@ -1,11 +1,16 @@
 package pl.projekt.backend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import jakarta.persistence.EntityNotFoundException;
 import pl.projekt.backend.model.*;
 import pl.projekt.backend.repository.*;
 import pl.projekt.backend.dto.CreateTaskRequest;
 import pl.projekt.backend.dto.UpdateTaskRequest;
+import pl.projekt.backend.dto.TaskWithAssigneeResponse;
+import pl.projekt.backend.dto.TaskAssigneeDetailsResponse;
+import pl.projekt.backend.dto.TaskCreatorDetailsResponse;
 
 import java.util.List;
 import java.util.UUID;
@@ -35,7 +40,7 @@ public class TaskService {
         task.setStatus(request.getStatus());
         task.setPriority(request.getPriority());
         task.setDueDate(request.getDueDate());
-        task.setCreatedBy(createdBy); // ustawiamy moderatora jako twórcę
+        task.setCreatedBy(createdBy);
         task.setAssignedTo(assignedTo);
 
         return taskRepository.save(task);
@@ -63,9 +68,100 @@ public class TaskService {
         taskRepository.deleteById(id);
     }
 
+    // Zadania przypisane do użytkownika (wszystkie projekty)
+    public List<Task> getTasksForUser(String username) {
+        User user = userRepository.findByEmail(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return taskRepository.findByAssignedTo(user);
+    }
+
+    // Wszystkie zadania w projekcie (dla MANAGERA)
+    public List<Task> getAllTasksForProject(UUID projectId) {
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new EntityNotFoundException("Project not found"));
+        return taskRepository.findByProject(project);
+    }
+
+    // Zadania w projekcie przypisane do zalogowanego użytkownika
     public List<Task> getTasksByProject(UUID projectId) {
-    Project project = projectRepository.findById(projectId)
-            .orElseThrow(() -> new RuntimeException("Project not found"));
-    return taskRepository.findByProject(project);
-}
+        Project project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+        String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder.getContext()
+                .getAuthentication().getName();
+        User user = userRepository.findByEmail(currentUserEmail)
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return taskRepository.findByProjectAndAssignedTo(project, user);
+    }
+
+    public List<TaskWithAssigneeResponse> getAllTasksForProjectWithAssignee(UUID projectId) {
+        Project project = projectRepository.findById(projectId)
+            .orElseThrow(() -> new EntityNotFoundException("Project not found"));
+        return taskRepository.findByProject(project).stream()
+            .map(task -> new TaskWithAssigneeResponse(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getStatus() != null ? task.getStatus().name() : null,
+                task.getPriority() != null ? task.getPriority().name() : null,
+                task.getCreatedAt(),
+                task.getUpdatedAt(),
+                task.getDueDate(),
+                task.getAssignedTo() != null ? task.getAssignedTo().getFirstName() : null,
+                task.getAssignedTo() != null ? task.getAssignedTo().getLastName() : null
+            ))
+            .toList();
+    }
+
+    public TaskWithAssigneeResponse getTaskWithAssigneeById(Long id) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        return new TaskWithAssigneeResponse(
+            task.getId(),
+            task.getTitle(),
+            task.getDescription(),
+            task.getStatus() != null ? task.getStatus().name() : null,
+            task.getPriority() != null ? task.getPriority().name() : null,
+            task.getCreatedAt(),
+            task.getUpdatedAt(),
+            task.getDueDate(),
+            task.getAssignedTo() != null ? task.getAssignedTo().getFirstName() : null,
+            task.getAssignedTo() != null ? task.getAssignedTo().getLastName() : null
+        );
+    }
+
+    public TaskAssigneeDetailsResponse getTaskAssigneeDetailsById(Long id) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        return new TaskAssigneeDetailsResponse(
+            task.getId(),
+            task.getTitle(),
+            task.getDescription(),
+            task.getStatus() != null ? task.getStatus().name() : null,
+            task.getPriority() != null ? task.getPriority().name() : null,
+            task.getCreatedAt(),
+            task.getUpdatedAt(),
+            task.getDueDate(),
+            task.getAssignedTo() != null ? task.getAssignedTo().getFirstName() : null,
+            task.getAssignedTo() != null ? task.getAssignedTo().getLastName() : null,
+            task.getAssignedTo() != null ? task.getAssignedTo().getEmail() : null
+        );
+    }
+
+    public TaskCreatorDetailsResponse getTaskCreatorDetailsById(Long id) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        return new TaskCreatorDetailsResponse(
+            task.getId(),
+            task.getTitle(),
+            task.getDescription(),
+            task.getStatus() != null ? task.getStatus().name() : null,
+            task.getPriority() != null ? task.getPriority().name() : null,
+            task.getCreatedAt(),
+            task.getUpdatedAt(),
+            task.getDueDate(),
+            task.getCreatedBy() != null ? task.getCreatedBy().getFirstName() : null,
+            task.getCreatedBy() != null ? task.getCreatedBy().getLastName() : null,
+            task.getCreatedBy() != null ? task.getCreatedBy().getEmail() : null
+        );
+    }
 }

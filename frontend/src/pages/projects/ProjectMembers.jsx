@@ -41,7 +41,7 @@ const ProjectMembers = () => {
   const [loading, setLoading] = useState(true);
   const [project, setProject] = useState(null);
   const [selectedEmail, setSelectedEmail] = useState("");
-  const [selectedRole, setSelectedRole] = useState("DEVELOPER"); // Default role
+  const [selectedRole, setSelectedRole] = useState("DEVELOPER"); 
 
   useEffect(() => {
     const fetchData = async () => {
@@ -59,7 +59,7 @@ const ProjectMembers = () => {
         ]);
 
         setProject(projectResponse.data);
-        setMembers(Object.values(membersResponse.data)); // <-- ważne!
+        setMembers(Object.values(membersResponse.data)); 
         setAvailableUsers(usersResponse.data);
       } catch (error) {
         console.error("Error fetching data:", error);
@@ -115,7 +115,7 @@ const ProjectMembers = () => {
     return <div>Ładowanie...</div>;
   }
 
-  // Filter out users that are already members
+  
   const filteredUsers = availableUsers.filter(
     user => !members.some(member => member.email === user.email)
   );

@@ -1,9 +1,9 @@
 import { useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useAuth } from "@/auth/AuthProvider";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { UserPlus, Edit, PlusCircle } from "lucide-react";
+import { UserPlus, Edit, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/api/axiosInstance";
 
@@ -13,6 +13,8 @@ const ProjectDetails = () => {
   const { getToken, user } = useAuth();
   const [project, setProject] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [tasks, setTasks] = useState([]);
+  const [tasksLoading, setTasksLoading] = useState(true);
 
   useEffect(() => {
     const fetchProjectDetails = async () => {
@@ -31,6 +33,44 @@ const ProjectDetails = () => {
 
     fetchProjectDetails();
   }, [id, getToken]);
+
+  useEffect(() => {
+    const fetchTasks = async () => {
+      setTasksLoading(true);
+      try {
+        let response;
+        if (user.role === "ROLE_MANAGER") {
+          response = await api.get(`/tasks/project/${id}/all`, {
+            headers: { Authorization: `Bearer ${getToken()}` }
+          });
+          setTasks(response.data);
+        } else {
+          response = await api.get("/tasks/my", {
+            headers: { Authorization: `Bearer ${getToken()}` }
+          });
+          setTasks(response.data); // <-- nie filtruj!
+        }
+      } catch (error) {
+        toast.error("Nie udało się pobrać zadań");
+      } finally {
+        setTasksLoading(false);
+      }
+    };
+    fetchTasks();
+  }, [id, user.role, getToken]);
+
+  const handleDeleteTask = async (taskId) => {
+    if (!window.confirm("Czy na pewno chcesz usunąć to zadanie?")) return;
+    try {
+      await api.delete(`/tasks/${taskId}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      setTasks(tasks.filter(task => task.id !== taskId));
+      toast.success("Zadanie zostało usunięte");
+    } catch (error) {
+      toast.error("Nie udało się usunąć zadania");
+    }
+  };
 
   if (loading) {
     return <div>Ładowanie...</div>;
@@ -70,6 +110,9 @@ const ProjectDetails = () => {
                 </Button>
                 <Button variant="outline" size="icon" title="Edytuj projekt">
                   <Edit className="h-4 w-4" />
+                </Button>
+                <Button variant="outline" size="icon" title="Usuń projekt">
+                  <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
             )}
@@ -119,6 +162,80 @@ const ProjectDetails = () => {
               </div>
             </div>
           )}
+
+          {/* Zadania sekcja */}
+          <div className="mt-8">
+            <h3 className="text-sm font-medium text-gray-500 mb-4">
+              Zadania w projekcie
+            </h3>
+            {tasksLoading ? (
+              <div>Ładowanie zadań...</div>
+            ) : tasks.length === 0 ? (
+              <div className="text-gray-400">Brak zadań</div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="min-w-full border text-sm">
+                  <thead>
+                    <tr className="bg-gray-100">
+                      <th className="p-2 border">Tytuł</th>
+                      <th className="p-2 border">Status</th>
+                      <th className="p-2 border">Priorytet</th>
+                      <th className="p-2 border">Termin</th>
+                      <th className="p-2 border">Przypisany do</th>
+                      <th className="p-2 border"></th>
+                      {user.role === "ROLE_MANAGER" && <th className="p-2 border"></th>}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {tasks.map((task) => (
+                      <tr key={task.id} className="hover:bg-gray-50">
+                        <td className="p-2 border font-semibold">
+                          <Link
+                            to={`/dashboard/projects/${id}/tasks/${task.id}`}
+                            className="hover:underline"
+                          >
+                            {task.title}
+                          </Link>
+                        </td>
+                        <td className="p-2 border">{task.status}</td>
+                        <td className="p-2 border">{task.priority}</td>
+                        <td className="p-2 border">
+                          {task.dueDate && new Date(task.dueDate).toLocaleDateString("pl-PL")}
+                        </td>
+                        <td className="p-2 border">
+                          {task.assignedFirstName && task.assignedLastName
+                            ? `${task.assignedFirstName} ${task.assignedLastName}`
+                            : task.assignedTo && typeof task.assignedTo === "object"
+                            ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}`
+                            : "-"}
+                        </td>
+                        <td className="p-2 border text-right">
+                          <Link
+                            to={`/dashboard/projects/${id}/tasks/${task.id}`}
+                            className="text-blue-600 hover:underline"
+                          >
+                            Szczegóły
+                          </Link>
+                        </td>
+                        {user.role === "ROLE_MANAGER" && (
+                          <td className="p-2 border text-right">
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              title="Usuń zadanie"
+                              onClick={() => handleDeleteTask(task.id)}
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
+                            </Button>
+                          </td>
+                        )}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
     </div>
