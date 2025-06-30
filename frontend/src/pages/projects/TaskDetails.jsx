@@ -1,7 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import api from "@/api/axiosInstance";
 import { useAuth } from "@/auth/AuthProvider";
@@ -31,6 +32,14 @@ const TaskDetails = () => {
   const [loading, setLoading] = useState(true);
   const [changingStatus, setChangingStatus] = useState(false);
 
+  // Komentarze
+  const [comments, setComments] = useState([]);
+  const [commentsLoading, setCommentsLoading] = useState(true);
+  const [commentText, setCommentText] = useState("");
+  const [addingComment, setAddingComment] = useState(false);
+  const commentInputRef = useRef(null);
+
+  // Pobierz szczegóły zadania
   useEffect(() => {
     const fetchTask = async () => {
       try {
@@ -46,6 +55,50 @@ const TaskDetails = () => {
     };
     fetchTask();
   }, [taskId, getToken]);
+
+  // Pobierz komentarze
+  useEffect(() => {
+    const fetchComments = async () => {
+      setCommentsLoading(true);
+      try {
+        const response = await api.get(`/tasks/${taskId}/comments`, {
+          headers: { Authorization: `Bearer ${getToken()}` },
+        });
+        setComments(response.data);
+      } catch (error) {
+        toast.error("Nie udało się pobrać komentarzy");
+      } finally {
+        setCommentsLoading(false);
+      }
+    };
+    fetchComments();
+  }, [taskId, getToken]);
+
+  // Dodawanie komentarza
+  const handleAddComment = async (e) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    setAddingComment(true);
+    try {
+      await api.post(
+        `/tasks/${taskId}/comments`,
+        { comment: commentText },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      setCommentText("");
+      // Odśwież komentarze po dodaniu
+      const response = await api.get(`/tasks/${taskId}/comments`, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setComments(response.data);
+      toast.success("Komentarz dodany");
+      commentInputRef.current?.focus();
+    } catch (error) {
+      toast.error("Nie udało się dodać komentarza");
+    } finally {
+      setAddingComment(false);
+    }
+  };
 
   const handleDelete = async () => {
     if (!window.confirm("Czy na pewno chcesz usunąć to zadanie?")) return;
@@ -116,7 +169,8 @@ const TaskDetails = () => {
               <span className="ml-2 text-gray-500">({task.creatorEmail})</span>
             )}
           </div>
-          <div className="flex gap-2 mt-4">
+          {/* PRZYCISKI AKCJI */}
+          <div className="flex gap-2 mt-4 mb-8">
             <Button variant="outline" onClick={() => navigate(-1)}>
               Powrót
             </Button>
@@ -144,6 +198,43 @@ const TaskDetails = () => {
                 <Trash2 className="h-4 w-4" />
                 Usuń zadanie
               </Button>
+            )}
+          </div>
+          {/* KOMENTARZE */}
+          <div>
+            <h3 className="text-sm font-medium text-gray-500 mb-2">Komentarze</h3>
+            <form onSubmit={handleAddComment} className="flex gap-2 mb-4">
+              <Input
+                ref={commentInputRef}
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Dodaj komentarz..."
+                disabled={addingComment}
+                maxLength={500}
+              />
+              <Button type="submit" disabled={addingComment || !commentText.trim()}>
+                Dodaj
+              </Button>
+            </form>
+            {commentsLoading ? (
+              <div className="text-gray-400">Ładowanie komentarzy...</div>
+            ) : comments.length === 0 ? (
+              <div className="text-gray-400">Brak komentarzy</div>
+            ) : (
+              <div className="space-y-4">
+                {comments.map((c) => (
+                  <div key={c.id} className="border rounded p-3 bg-gray-50">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-semibold">{c.authorFirstName} {c.authorLastName}</span>
+                      <span className="text-xs text-gray-500">({c.authorEmail})</span>
+                      <span className="text-xs text-gray-400 ml-2">
+                        {new Date(c.createdAt).toLocaleString("pl-PL")}
+                      </span>
+                    </div>
+                    <div className="text-sm">{c.comment}</div>
+                  </div>
+                ))}
+              </div>
             )}
           </div>
         </CardContent>

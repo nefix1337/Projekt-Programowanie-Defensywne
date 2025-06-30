@@ -15,6 +15,7 @@ import ProjectMembers from "../pages/projects/ProjectMembers";
 import AddTask from "../pages/projects/AddTask";
 import TaskDetails from "../pages/projects/TaskDetails";
 import EditTask from "../pages/projects/EditTask";
+import EditProject from "../pages/projects/EditProject";
 
 const Routes = () => {
   const publicRoutes = [
@@ -80,6 +81,14 @@ const Routes = () => {
         {
           path: "projects/:id/tasks/:taskId/edit",
           element: <EditTask />,
+        },
+        {
+          path: "projects/:id/edit",
+          element: (
+            <ProtectedRoute allowedRoles={["ROLE_MANAGER"]}>
+              <EditProject />
+            </ProtectedRoute>
+          ),
         },
       ],
     },

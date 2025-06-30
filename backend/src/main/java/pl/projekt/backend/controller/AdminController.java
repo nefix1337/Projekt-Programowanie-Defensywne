@@ -13,6 +13,10 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 
 import java.util.List;
 
+/**
+ * Kontroler REST do obsługi operacji administracyjnych.
+ * Udostępnia endpointy do zmiany roli użytkownika oraz pobierania listy wszystkich użytkowników.
+ */
 @RestController
 @RequestMapping("/api/admin")
 @RequiredArgsConstructor
@@ -21,6 +25,13 @@ public class AdminController {
 
     private final AdminService adminService;
 
+    /**
+     * Zmienia rolę użytkownika na podstawie przesłanego żądania.
+     * Endpoint dostępny tylko dla roli ADMIN.
+     *
+     * @param request obiekt zawierający email użytkownika i nową rolę
+     * @return odpowiedź HTTP 200 z komunikatem o sukcesie
+     */
     @Operation(summary = "Zmiania roli użytkownika")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/change-role")
@@ -29,6 +40,12 @@ public class AdminController {
         return ResponseEntity.ok("User role updated successfully");
     }
 
+    /**
+     * Pobiera listę wszystkich użytkowników.
+     * Endpoint dostępny tylko dla roli ADMIN.
+     *
+     * @return odpowiedź HTTP 200 z listą użytkowników
+     */
     @Operation(summary = "Pobieranie wszystkich użytkowników")
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/users")

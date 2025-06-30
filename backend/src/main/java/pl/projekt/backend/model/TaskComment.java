@@ -11,6 +11,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
+@Data
+@NoArgsConstructor
 @Entity
 @Table(name = "task_comments")
 public class TaskComment {

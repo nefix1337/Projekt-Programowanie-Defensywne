@@ -99,6 +99,19 @@ const ProjectDetails = () => {
     }
   };
 
+  const handleDeleteProject = async () => {
+    if (!window.confirm("Czy na pewno chcesz usunąć ten projekt?")) return;
+    try {
+      await api.delete(`/projects/${id}`, {
+        headers: { Authorization: `Bearer ${getToken()}` }
+      });
+      toast.success("Projekt został usunięty");
+      navigate("/dashboard/projects");
+    } catch (error) {
+      toast.error("Nie udało się usunąć projektu");
+    }
+  };
+
   // Filtrowanie zadań
   const filteredTasks = tasks.filter((task) => {
     const statusOk = statusFilter ? task.status === statusFilter : true;
@@ -216,7 +229,6 @@ const ProjectDetails = () => {
               <span className="text-3xl">{project.icon}</span>
               <CardTitle>{project.name}</CardTitle>
             </div>
-            
             {user.role === "ROLE_MANAGER" && (
               <div className="flex gap-2">
                 <Button 
@@ -235,10 +247,20 @@ const ProjectDetails = () => {
                 >
                   <PlusCircle className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" title="Edytuj projekt">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Edytuj projekt"
+                  onClick={() => navigate(`/dashboard/projects/${id}/edit`)}
+                >
                   <Edit className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" title="Usuń projekt">
+                <Button
+                  variant="outline"
+                  size="icon"
+                  title="Usuń projekt"
+                  onClick={handleDeleteProject}
+                >
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

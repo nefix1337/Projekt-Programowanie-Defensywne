@@ -11,9 +11,13 @@ import pl.projekt.backend.dto.UpdateTaskRequest;
 import pl.projekt.backend.dto.TaskWithAssigneeResponse;
 import pl.projekt.backend.dto.TaskAssigneeDetailsResponse;
 import pl.projekt.backend.dto.TaskCreatorDetailsResponse;
+import pl.projekt.backend.dto.AddTaskCommentRequest;
+import pl.projekt.backend.dto.TaskCommentResponse;
 
 import java.util.List;
 import java.util.UUID;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.Authentication;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +25,7 @@ public class TaskService {
     private final TaskRepository taskRepository;
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
+    private final TaskCommentRepository taskCommentRepository;
 
     public Task createTask(CreateTaskRequest request) {
         Project project = projectRepository.findById(request.getProjectId())
@@ -183,5 +188,48 @@ public class TaskService {
             assigned != null ? assigned.getFirstName() : null,
             assigned != null ? assigned.getLastName() : null
         );
+    }
+
+    /**
+     * Dodaje komentarz do zadania.
+     * @param taskId id zadania
+     * @param request treść komentarza
+     * @return dodany komentarz
+     */
+    public TaskComment addCommentToTask(Long taskId, AddTaskCommentRequest request) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        TaskComment comment = new TaskComment();
+        comment.setTask(task);
+        comment.setUser(user);
+        comment.setComment(request.getComment());
+
+        return taskCommentRepository.save(comment);
+    }
+
+    /**
+     * Pobiera komentarze do zadania.
+     */
+    public List<TaskCommentResponse> getCommentsForTask(Long taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new RuntimeException("Task not found"));
+        List<TaskComment> comments = taskCommentRepository.findByTask(task);
+
+        return comments.stream().map(comment -> {
+            TaskCommentResponse dto = new TaskCommentResponse();
+            dto.setId(comment.getId());
+            dto.setComment(comment.getComment());
+            dto.setCreatedAt(comment.getCreatedAt());
+            dto.setAuthorFirstName(comment.getUser().getFirstName());
+            dto.setAuthorLastName(comment.getUser().getLastName());
+            dto.setAuthorEmail(comment.getUser().getEmail());
+            return dto;
+        }).toList();
     }
 }
