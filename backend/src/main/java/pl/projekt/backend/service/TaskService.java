@@ -164,4 +164,24 @@ public class TaskService {
             task.getCreatedBy() != null ? task.getCreatedBy().getEmail() : null
         );
     }
+
+    public TaskWithAssigneeResponse setTaskStatusToReview(Long id) {
+        Task task = taskRepository.findById(id)
+            .orElseThrow(() -> new EntityNotFoundException("Task not found"));
+        task.setStatus(TaskStatus.TO_REVIEW);
+        taskRepository.save(task);
+        User assigned = task.getAssignedTo();
+        return new TaskWithAssigneeResponse(
+            task.getId(),
+            task.getTitle(),
+            task.getDescription(),
+            task.getStatus().name(),
+            task.getPriority() != null ? task.getPriority().name() : null,
+            task.getCreatedAt(),
+            task.getUpdatedAt(),
+            task.getDueDate(),
+            assigned != null ? assigned.getFirstName() : null,
+            assigned != null ? assigned.getLastName() : null
+        );
+    }
 }

@@ -3,6 +3,7 @@ import { useAuth } from "@/auth/AuthProvider";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Link } from "react-router-dom";
 
 const Register = () => {
   const { register } = useAuth();
@@ -20,13 +21,37 @@ const Register = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const validate = (data) => {
+    if (!data.firstName || data.firstName.length < 2 || data.firstName.length > 20) {
+      return "Imię musi mieć od 2 do 20 znaków";
+    }
+    if (!data.lastName || data.lastName.length < 2 || data.lastName.length > 20) {
+      return "Nazwisko musi mieć od 2 do 20 znaków";
+    }
+    if (!data.email || data.email.length > 50) {
+      return "Email jest wymagany i nie może mieć więcej niż 50 znaków";
+    }
+    // Prosta walidacja emaila
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.email)) {
+      return "Podaj poprawny adres email";
+    }
+    if (!data.password || data.password.length < 6 || data.password.length > 40) {
+      return "Hasło musi mieć od 6 do 40 znaków";
+    }
+    if (data.password !== data.confirmPassword) {
+      return "Hasła nie są zgodne";
+    }
+    return "";
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError("Hasła nie są zgodne");
+    const validationError = validate(formData);
+    if (validationError) {
+      setError(validationError);
       return;
     }
-
+    setError("");
     try {
       const response = await register(
         formData.firstName,
@@ -92,9 +117,17 @@ const Register = () => {
               placeholder="Potwierdź hasło"
               required
             />
-            {error && <p className="text-red-500 text-sm">{error}</p>}
+            {error && (
+              <div className="text-red-600 text-sm mb-2">{error}</div>
+            )}
             <Button type="submit">Zarejestruj się</Button>
           </form>
+          <div className="text-center mt-2">
+            <span className="text-sm text-gray-600">Masz już konto? </span>
+            <Link to="/login" className="text-blue-600 hover:underline text-sm">
+              Zaloguj się
+            </Link>
+          </div>
         </CardContent>
       </Card>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useContext } from "react";
 import { AuthContext } from "../../auth/AuthProvider";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -64,24 +64,32 @@ const Login = () => {
             </form>
           ) : (
             // Formularz logowania
-            <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
-              <Input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Email"
-                type="email"
-                required
-              />
-              <Input
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Hasło"
-                type="password"
-                required
-              />
-              {error && <p className="text-red-500 text-sm">{error}</p>}
-              <Button type="submit">Zaloguj się</Button>
-            </form>
+            <>
+              <form onSubmit={handleLoginSubmit} className="flex flex-col gap-4">
+                <Input
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Email"
+                  type="email"
+                  required
+                />
+                <Input
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Hasło"
+                  type="password"
+                  required
+                />
+                {error && <p className="text-red-500 text-sm">{error}</p>}
+                <Button type="submit">Zaloguj się</Button>
+              </form>
+              <div className="text-center mt-2">
+                <span className="text-sm text-gray-600">Nie masz konta? </span>
+                <Link to="/register" className="text-blue-600 hover:underline text-sm">
+                  Zarejestruj się
+                </Link>
+              </div>
+            </>
           )}
         </CardContent>
       </Card>

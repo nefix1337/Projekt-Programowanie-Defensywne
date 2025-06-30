@@ -7,12 +7,29 @@ import api from "@/api/axiosInstance";
 import { useAuth } from "@/auth/AuthProvider";
 import { Trash2 } from "lucide-react";
 
+const StatusBadge = ({ status }) => {
+  const colors = {
+    TODO: "bg-gray-200 text-gray-800",
+    IN_PROGRESS: "bg-blue-200 text-blue-800",
+    DONE: "bg-green-200 text-green-800",
+    TO_REVIEW: "bg-yellow-200 text-yellow-800",
+    VERIFIED: "bg-purple-200 text-purple-800",
+    ARCHIVED: "bg-gray-400 text-white",
+  };
+  return (
+    <span className={`px-2 py-1 rounded text-xs font-semibold ${colors[status] || "bg-gray-100 text-gray-700"}`}>
+      {status.replace("_", " ")}
+    </span>
+  );
+};
+
 const TaskDetails = () => {
   const { id, taskId } = useParams();
   const navigate = useNavigate();
   const { getToken, user } = useAuth();
   const [task, setTask] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [changingStatus, setChangingStatus] = useState(false);
 
   useEffect(() => {
     const fetchTask = async () => {
@@ -43,13 +60,33 @@ const TaskDetails = () => {
     }
   };
 
+  const handleSetToReview = async () => {
+    setChangingStatus(true);
+    try {
+      const response = await api.patch(`/tasks/${taskId}/to-review`, null, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setTask(response.data);
+      toast.success("Zadanie przekazane do sprawdzenia");
+    } catch (error) {
+      toast.error("Nie udało się przekazać zadania do sprawdzenia");
+    } finally {
+      setChangingStatus(false);
+    }
+  };
+
   if (loading) return <div>Ładowanie...</div>;
   if (!task) return <div>Nie znaleziono zadania</div>;
-
 
   const canDelete =
     user?.role === "ROLE_MANAGER" ||
     user?.email === task.creatorEmail;
+
+  // Użytkownik może przekazać do sprawdzenia, jeśli jest przypisany do zadania i status to np. "DONE" lub "IN_PROGRESS"
+  const canSetToReview =
+    user?.role === "ROLE_USER" &&
+    user?.email === task.assignedEmail &&
+    !["TO_REVIEW", "VERIFIED", "ARCHIVED"].includes(task.status);
 
   return (
     <div className="p-8">
@@ -63,7 +100,7 @@ const TaskDetails = () => {
             <div>{task.description || "Brak opisu"}</div>
           </div>
           <div className="mb-2">
-            <span className="font-medium">Status:</span> {task.status}
+            <span className="font-medium">Status:</span> <StatusBadge status={task.status} />
           </div>
           <div className="mb-2">
             <span className="font-medium">Priorytet:</span> {task.priority}
@@ -83,6 +120,21 @@ const TaskDetails = () => {
             <Button variant="outline" onClick={() => navigate(-1)}>
               Powrót
             </Button>
+            <Button
+              variant="outline"
+              onClick={() => navigate(`/dashboard/projects/${id}/tasks/${taskId}/edit`)}
+            >
+              Edytuj
+            </Button>
+            {canSetToReview && (
+              <Button
+                variant="secondary"
+                onClick={handleSetToReview}
+                disabled={changingStatus}
+              >
+                {changingStatus ? "Przekazywanie..." : "Przekaż do sprawdzenia"}
+              </Button>
+            )}
             {canDelete && (
               <Button
                 variant="destructive"

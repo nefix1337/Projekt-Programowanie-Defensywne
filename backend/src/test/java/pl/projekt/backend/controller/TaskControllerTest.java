@@ -20,7 +20,7 @@ import java.util.UUID;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-@DisplayName("Task Controller Tests")
+@DisplayName("Testy kontrolera zadań")
 @ExtendWith(MockitoExtension.class)
 class TaskControllerTest {
 
@@ -54,7 +54,7 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("Should create new task and return 200 OK")
+    @DisplayName("Powinien utworzyć nowe zadanie i zwrócić 200 OK")
     void createTask_ShouldReturnCreatedTask() {
         CreateTaskRequest request = new CreateTaskRequest();
         when(taskService.createTask(request)).thenReturn(testTask);
@@ -68,7 +68,7 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("Should return task details with creator information and 200 OK")
+    @DisplayName("Powinien zwrócić szczegóły zadania z informacją o twórcy i 200 OK")
     void getTaskDetailsById_ShouldReturnTaskDetails() {
         when(taskService.getTaskCreatorDetailsById(1L)).thenReturn(testTaskCreatorDetails);
 
@@ -82,7 +82,7 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("Should return list of tasks for project with assignees and 200 OK")
+    @DisplayName("Powinien zwrócić listę zadań dla projektu z przypisanymi osobami i 200 OK")
     void getAllTasksForProject_ShouldReturnTasksList() {
         UUID projectId = UUID.randomUUID();
         List<TaskWithAssigneeResponse> tasks = Arrays.asList(testTaskWithAssignee);
@@ -98,7 +98,7 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("Should return single task with assignee information and 200 OK")
+    @DisplayName("Powinien zwrócić pojedyncze zadanie z informacją o przypisanej osobie i 200 OK")
     void getTaskById_ShouldReturnTaskWithAssignee() {
         when(taskService.getTaskWithAssigneeById(1L)).thenReturn(testTaskWithAssignee);
 
@@ -112,7 +112,7 @@ class TaskControllerTest {
     }
 
     @Test
-    @DisplayName("Should delete task and return 204 No Content")
+    @DisplayName("Powinien usunąć zadanie i zwrócić 204 No Content")
     void deleteTask_ShouldReturnNoContent() {
         ResponseEntity<Void> response = taskController.deleteTask(1L);
 

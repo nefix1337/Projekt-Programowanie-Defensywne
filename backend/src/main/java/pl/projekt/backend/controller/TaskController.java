@@ -77,4 +77,10 @@ public class TaskController {
     public ResponseEntity<TaskCreatorDetailsResponse> getTaskDetailsById(@PathVariable Long id) {
         return ResponseEntity.ok(taskService.getTaskCreatorDetailsById(id));
     }
+
+    @Operation(summary = "Przekazanie zadania do sprawdzenia (zmiana statusu na TO_REVIEW)")
+    @PatchMapping("/{id}/to-review")
+    public ResponseEntity<TaskWithAssigneeResponse> setTaskToReview(@PathVariable Long id) {
+        return ResponseEntity.ok(taskService.setTaskStatusToReview(id));
+    }
 }

@@ -6,6 +6,24 @@ import { Button } from "@/components/ui/button";
 import { UserPlus, Edit, PlusCircle, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import api from "@/api/axiosInstance";
+import {
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell,
+} from "@/components/ui/table";
+
+const STATUS_OPTIONS = [
+  "TODO",
+  "IN_PROGRESS",
+  "DONE",
+  "TO_REVIEW",
+  "VERIFIED",
+  "ARCHIVED",
+];
+const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH"];
 
 const ProjectDetails = () => {
   const { id } = useParams();
@@ -15,6 +33,15 @@ const ProjectDetails = () => {
   const [loading, setLoading] = useState(true);
   const [tasks, setTasks] = useState([]);
   const [tasksLoading, setTasksLoading] = useState(true);
+
+  // Stan filtrów
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
+  const [assigneeFilter, setAssigneeFilter] = useState("");
+
+  // Stan sortowania
+  const [sortBy, setSortBy] = useState("");
+  const [sortOrder, setSortOrder] = useState("asc");
 
   useEffect(() => {
     const fetchProjectDetails = async () => {
@@ -48,7 +75,7 @@ const ProjectDetails = () => {
           response = await api.get("/tasks/my", {
             headers: { Authorization: `Bearer ${getToken()}` }
           });
-          setTasks(response.data); // <-- nie filtruj!
+          setTasks(response.data);
         }
       } catch (error) {
         toast.error("Nie udało się pobrać zadań");
@@ -72,6 +99,75 @@ const ProjectDetails = () => {
     }
   };
 
+  // Filtrowanie zadań
+  const filteredTasks = tasks.filter((task) => {
+    const statusOk = statusFilter ? task.status === statusFilter : true;
+    const priorityOk = priorityFilter ? task.priority === priorityFilter : true;
+    const assigneeOk = assigneeFilter
+      ? (
+          (task.assignedFirstName && task.assignedLastName
+            ? `${task.assignedFirstName} ${task.assignedLastName}`
+            : task.assignedTo && typeof task.assignedTo === "object"
+            ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}`
+            : "-"
+          ) === assigneeFilter
+        )
+      : true;
+    return statusOk && priorityOk && assigneeOk;
+  });
+
+  // Lista unikalnych przypisanych użytkowników do selecta
+  const assignees = Array.from(
+    new Set(
+      tasks.map((task) =>
+        task.assignedFirstName && task.assignedLastName
+          ? `${task.assignedFirstName} ${task.assignedLastName}`
+          : task.assignedTo && typeof task.assignedTo === "object"
+          ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}`
+          : "-"
+      )
+    )
+  ).filter((name) => name && name !== "-");
+
+  const handleSort = (column) => {
+    if (sortBy === column) {
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+  };
+
+  // Funkcja sortująca
+  const sortedTasks = [...filteredTasks].sort((a, b) => {
+    if (!sortBy) return 0;
+    let aValue = a[sortBy];
+    let bValue = b[sortBy];
+
+    // Obsługa daty
+    if (sortBy === "dueDate") {
+      aValue = aValue ? new Date(aValue) : new Date(0);
+      bValue = bValue ? new Date(bValue) : new Date(0);
+    }
+    // Obsługa przypisanego do
+    if (sortBy === "assignedTo") {
+      aValue = a.assignedFirstName && a.assignedLastName
+        ? `${a.assignedFirstName} ${a.assignedLastName}`
+        : a.assignedTo && typeof a.assignedTo === "object"
+        ? `${a.assignedTo.firstName} ${a.assignedTo.lastName}`
+        : "";
+      bValue = b.assignedFirstName && b.assignedLastName
+        ? `${b.assignedFirstName} ${b.assignedLastName}`
+        : b.assignedTo && typeof b.assignedTo === "object"
+        ? `${b.assignedTo.firstName} ${b.assignedTo.lastName}`
+        : "";
+    }
+
+    if (aValue < bValue) return sortOrder === "asc" ? -1 : 1;
+    if (aValue > bValue) return sortOrder === "asc" ? 1 : -1;
+    return 0;
+  });
+
   if (loading) {
     return <div>Ładowanie...</div>;
   }
@@ -79,6 +175,37 @@ const ProjectDetails = () => {
   if (!project) {
     return <div>Nie znaleziono projektu</div>;
   }
+
+  // Badge do statusu
+  const StatusBadge = ({ status }) => {
+    const colors = {
+      TODO: "bg-gray-200 text-gray-800",
+      IN_PROGRESS: "bg-blue-200 text-blue-800",
+      DONE: "bg-green-200 text-green-800",
+      TO_REVIEW: "bg-yellow-200 text-yellow-800",
+      VERIFIED: "bg-purple-200 text-purple-800",
+      ARCHIVED: "bg-gray-400 text-white",
+    };
+    return (
+      <span className={`px-2 py-1 rounded text-xs font-semibold ${colors[status] || "bg-gray-100 text-gray-700"}`}>
+        {status.replace("_", " ")}
+      </span>
+    );
+  };
+
+  // Badge do priorytetu
+  const PriorityBadge = ({ priority }) => {
+    const colors = {
+      LOW: "bg-green-100 text-green-700",
+      MEDIUM: "bg-yellow-100 text-yellow-700",
+      HIGH: "bg-red-100 text-red-700",
+    };
+    return (
+      <span className={`px-2 py-1 rounded text-xs font-semibold ${colors[priority] || "bg-gray-100 text-gray-700"}`}>
+        {priority}
+      </span>
+    );
+  };
 
   return (
     <div className="p-8">
@@ -127,7 +254,7 @@ const ProjectDetails = () => {
 
             <div className="space-y-2">
               <h3 className="text-sm font-medium text-gray-500">Status</h3>
-              <p>{project.status}</p>
+              <p><StatusBadge status={project.status} /></p>
             </div>
 
             <div className="space-y-2">
@@ -168,57 +295,132 @@ const ProjectDetails = () => {
             <h3 className="text-sm font-medium text-gray-500 mb-4">
               Zadania w projekcie
             </h3>
+            {/* FILTRY */}
+            <div className="flex flex-wrap gap-4 mb-4">
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Status</label>
+                <select
+                  className="border rounded px-2 py-1"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value)}
+                >
+                  <option value="">Wszystkie</option>
+                  {STATUS_OPTIONS.map((status) => (
+                    <option key={status} value={status}>
+                      {status}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Priorytet</label>
+                <select
+                  className="border rounded px-2 py-1"
+                  value={priorityFilter}
+                  onChange={(e) => setPriorityFilter(e.target.value)}
+                >
+                  <option value="">Wszystkie</option>
+                  {PRIORITY_OPTIONS.map((priority) => (
+                    <option key={priority} value={priority}>
+                      {priority}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs text-gray-500 mb-1">Przypisany do</label>
+                <select
+                  className="border rounded px-2 py-1"
+                  value={assigneeFilter}
+                  onChange={(e) => setAssigneeFilter(e.target.value)}
+                >
+                  <option value="">Wszyscy</option>
+                  {assignees.map((name) => (
+                    <option key={name} value={name}>
+                      {name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+            {/* KONIEC FILTRÓW */}
+
             {tasksLoading ? (
               <div>Ładowanie zadań...</div>
-            ) : tasks.length === 0 ? (
+            ) : sortedTasks.length === 0 ? (
               <div className="text-gray-400">Brak zadań</div>
             ) : (
               <div className="overflow-x-auto">
-                <table className="min-w-full border text-sm">
-                  <thead>
-                    <tr className="bg-gray-100">
-                      <th className="p-2 border">Tytuł</th>
-                      <th className="p-2 border">Status</th>
-                      <th className="p-2 border">Priorytet</th>
-                      <th className="p-2 border">Termin</th>
-                      <th className="p-2 border">Przypisany do</th>
-                      <th className="p-2 border"></th>
-                      {user.role === "ROLE_MANAGER" && <th className="p-2 border"></th>}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {tasks.map((task) => (
-                      <tr key={task.id} className="hover:bg-gray-50">
-                        <td className="p-2 border font-semibold">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => handleSort("title")}
+                      >
+                        Tytuł {sortBy === "title" && (sortOrder === "asc" ? "▲" : "▼")}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => handleSort("status")}
+                      >
+                        Status {sortBy === "status" && (sortOrder === "asc" ? "▲" : "▼")}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => handleSort("priority")}
+                      >
+                        Priorytet {sortBy === "priority" && (sortOrder === "asc" ? "▲" : "▼")}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => handleSort("dueDate")}
+                      >
+                        Termin {sortBy === "dueDate" && (sortOrder === "asc" ? "▲" : "▼")}
+                      </TableHead>
+                      <TableHead
+                        className="cursor-pointer select-none"
+                        onClick={() => handleSort("assignedTo")}
+                      >
+                        Przypisany do {sortBy === "assignedTo" && (sortOrder === "asc" ? "▲" : "▼")}
+                      </TableHead>
+                      <TableHead></TableHead>
+                      {user.role === "ROLE_MANAGER" && <TableHead></TableHead>}
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {sortedTasks.map((task) => (
+                      <TableRow key={task.id} className="hover:bg-gray-50">
+                        <TableCell className="font-semibold">
                           <Link
                             to={`/dashboard/projects/${id}/tasks/${task.id}`}
                             className="hover:underline"
                           >
                             {task.title}
                           </Link>
-                        </td>
-                        <td className="p-2 border">{task.status}</td>
-                        <td className="p-2 border">{task.priority}</td>
-                        <td className="p-2 border">
+                        </TableCell>
+                        <TableCell><StatusBadge status={task.status} /></TableCell>
+                        <TableCell><PriorityBadge priority={task.priority} /></TableCell>
+                        <TableCell>
                           {task.dueDate && new Date(task.dueDate).toLocaleDateString("pl-PL")}
-                        </td>
-                        <td className="p-2 border">
+                        </TableCell>
+                        <TableCell>
                           {task.assignedFirstName && task.assignedLastName
                             ? `${task.assignedFirstName} ${task.assignedLastName}`
                             : task.assignedTo && typeof task.assignedTo === "object"
                             ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}`
                             : "-"}
-                        </td>
-                        <td className="p-2 border text-right">
+                        </TableCell>
+                        <TableCell className="text-right">
                           <Link
                             to={`/dashboard/projects/${id}/tasks/${task.id}`}
                             className="text-blue-600 hover:underline"
                           >
                             Szczegóły
                           </Link>
-                        </td>
+                        </TableCell>
                         {user.role === "ROLE_MANAGER" && (
-                          <td className="p-2 border text-right">
+                          <TableCell className="text-right">
                             <Button
                               variant="ghost"
                               size="icon"
@@ -227,12 +429,12 @@ const ProjectDetails = () => {
                             >
                               <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
-                          </td>
+                          </TableCell>
                         )}
-                      </tr>
+                      </TableRow>
                     ))}
-                  </tbody>
-                </table>
+                  </TableBody>
+                </Table>
               </div>
             )}
           </div>

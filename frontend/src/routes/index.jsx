@@ -14,6 +14,7 @@ import ProjectDetails from "../pages/projects/ProjectDetails";
 import ProjectMembers from "../pages/projects/ProjectMembers";
 import AddTask from "../pages/projects/AddTask";
 import TaskDetails from "../pages/projects/TaskDetails";
+import EditTask from "../pages/projects/EditTask";
 
 const Routes = () => {
   const publicRoutes = [
@@ -75,6 +76,10 @@ const Routes = () => {
         {
           path: "projects/:id/tasks/:taskId",
           element: <TaskDetails />,
+        },
+        {
+          path: "projects/:id/tasks/:taskId/edit",
+          element: <EditTask />,
         },
       ],
     },
