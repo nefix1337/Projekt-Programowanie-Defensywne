@@ -15,8 +15,19 @@ import {
 import { toast } from "sonner";
 import api from "@/api/axiosInstance";
 
-const TASK_PRIORITIES = ["LOW", "MEDIUM", "HIGH"];
-const TASK_STATUSES = ["TODO", "IN_PROGRESS", "DONE", "VERIFIED", "ARCHIVED"];
+const TASK_STATUSES = [
+  { value: "TODO", label: "Do zrobienia" },
+  { value: "IN_PROGRESS", label: "W trakcie" },
+  { value: "DONE", label: "Zrobione" },
+  { value: "VERIFIED", label: "Zweryfikowane" },
+  { value: "ARCHIVED", label: "Zarchiwizowane" },
+];
+
+const TASK_PRIORITIES = [
+  { value: "LOW", label: "Niski" },
+  { value: "MEDIUM", label: "Średni" },
+  { value: "HIGH", label: "Wysoki" },
+];
 
 const AddTask = () => {
   const { id: projectId } = useParams();
@@ -124,8 +135,8 @@ const AddTask = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {TASK_STATUSES.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status.replace("_", " ")}
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -142,8 +153,8 @@ const AddTask = () => {
                   </SelectTrigger>
                   <SelectContent>
                     {TASK_PRIORITIES.map((priority) => (
-                      <SelectItem key={priority} value={priority}>
-                        {priority.charAt(0) + priority.slice(1).toLowerCase()}
+                      <SelectItem key={priority.value} value={priority.value}>
+                        {priority.label}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -232,4 +232,23 @@ public class TaskService {
             return dto;
         }).toList();
     }
+
+    public List<TaskWithAssigneeResponse> getTasksForUserWithAssignee(String username) {
+        User user = userRepository.findByEmail(username)
+            .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+        return taskRepository.findByAssignedTo(user).stream()
+            .map(task -> new TaskWithAssigneeResponse(
+                task.getId(),
+                task.getTitle(),
+                task.getDescription(),
+                task.getStatus() != null ? task.getStatus().name() : null,
+                task.getPriority() != null ? task.getPriority().name() : null,
+                task.getCreatedAt(),
+                task.getUpdatedAt(),
+                task.getDueDate(),
+                task.getAssignedTo() != null ? task.getAssignedTo().getFirstName() : null,
+                task.getAssignedTo() != null ? task.getAssignedTo().getLastName() : null
+            ))
+            .toList();
+    }
 }

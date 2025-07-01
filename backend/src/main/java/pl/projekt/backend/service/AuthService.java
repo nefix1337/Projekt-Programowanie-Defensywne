@@ -46,13 +46,13 @@ public class AuthService {
     }
 
     public AuthResponse login(LoginRequest request) {
-        // Authentication authentication = authenticationManager.authenticate(
-        //         new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
-        // );
-
-        // DODAĆ SPRAWDZANIE HASŁA!!!!!
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("User not found"));
+
+        // Sprawdzenie poprawności hasła
+        if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            throw new RuntimeException("Invalid password");
+        }
 
         if (user.isTwoFactorEnabled()) {
             if (request.getTotpCode() == null) {

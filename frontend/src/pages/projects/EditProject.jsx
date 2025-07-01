@@ -3,9 +3,21 @@ import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
+import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover";
 import { toast } from "sonner";
 import api from "@/api/axiosInstance";
 import { useAuth } from "@/auth/AuthProvider";
+import EmojiPicker from "emoji-picker-react";
+
+const STATUS_OPTIONS = [
+  { value: "TODO", label: "Do zrobienia" },
+  { value: "IN_PROGRESS", label: "W trakcie" },
+  { value: "DONE", label: "Zrobione" },
+  { value: "TO_REVIEW", label: "Do sprawdzenia" },
+  { value: "VERIFIED", label: "Zweryfikowane" },
+  { value: "ARCHIVED", label: "Zarchiwizowane" },
+];
 
 const EditProject = () => {
   const { id } = useParams();
@@ -19,6 +31,7 @@ const EditProject = () => {
     icon: "",
     status: "TODO",
   });
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
   useEffect(() => {
     const fetchProject = async () => {
@@ -66,6 +79,14 @@ const EditProject = () => {
     }
   };
 
+  const handleEmojiSelect = (emojiData) => {
+    setForm((prev) => ({
+      ...prev,
+      icon: emojiData.emoji || emojiData.native || "",
+    }));
+    setShowEmojiPicker(false);
+  };
+
   if (loading) return <div>Ładowanie...</div>;
 
   return (
@@ -95,28 +116,39 @@ const EditProject = () => {
             </div>
             <div>
               <label className="block text-xs mb-1">Ikona (emoji)</label>
-              <Input
-                name="icon"
-                value={form.icon}
-                onChange={handleChange}
-                maxLength={2}
-              />
+              <Popover open={showEmojiPicker} onOpenChange={setShowEmojiPicker}>
+                <PopoverTrigger asChild>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    className="w-16 h-10 text-2xl"
+                  >
+                    {form.icon || "🙂"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <EmojiPicker
+                    onEmojiClick={handleEmojiSelect}
+                    width={300}
+                    height={400}
+                  />
+                </PopoverContent>
+              </Popover>
             </div>
             <div>
               <label className="block text-xs mb-1">Status</label>
-              <select
-                name="status"
-                value={form.status}
-                onChange={handleChange}
-                className="border rounded px-2 py-1 w-full"
-              >
-                <option value="TODO">TODO</option>
-                <option value="IN_PROGRESS">IN_PROGRESS</option>
-                <option value="DONE">DONE</option>
-                <option value="TO_REVIEW">TO_REVIEW</option>
-                <option value="VERIFIED">VERIFIED</option>
-                <option value="ARCHIVED">ARCHIVED</option>
-              </select>
+              <Select value={form.status} onValueChange={val => setForm(prev => ({ ...prev, status: val }))}>
+                <SelectTrigger className="w-full">
+                  <SelectValue placeholder="Wybierz status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div className="flex gap-2 mt-4">
               <Button type="submit" disabled={saving}>

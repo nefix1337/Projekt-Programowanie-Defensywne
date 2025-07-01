@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Settings, FolderPlus, LayoutDashboard } from "lucide-react";
+import { Settings, FolderPlus, LayoutDashboard, ClipboardList } from "lucide-react";
 import api from "@/api/axiosInstance";
 import {
   useSidebar,
@@ -58,7 +58,12 @@ const SidebarRender = () => {
         <SidebarHeader className="flex flex-col gap-2 px-4">
           {/* App title */}
           <div className="flex items-center justify-between">
-            {state === "expanded" && <span className="text-lg font-semibold truncate">TASKMANAGER</span>}
+            {state === "expanded" && (
+              <span className="flex items-center gap-2 text-lg font-semibold mx-auto truncate">
+                <ClipboardList className="h-6 w-6" />
+                TASK MANAGER
+              </span>
+            )}
           </div>
         </SidebarHeader>
 
@@ -66,7 +71,7 @@ const SidebarRender = () => {
           <SidebarGroup>
             <SidebarGroupContent>
               <SidebarMenu>
-                <SidebarMenuItem className="mt-2 h-10">
+                <SidebarMenuItem className="mt-2 h-5">
                   <SidebarMenuButton asChild>
                     <Link to="/dashboard">
                       <div className="flex items-center gap-2">
@@ -76,6 +81,31 @@ const SidebarRender = () => {
                     </Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+
+                {/* Add Project button for MANAGER role - moved above projects list */}
+                {user.role === "ROLE_MANAGER" && (
+                  <SidebarMenuItem className="mt-4 h-10">
+                    <SidebarMenuButton asChild>
+                      <Link to="/dashboard/projects/new">
+                        {state === "expanded" ? (
+                          <div className="flex items-center gap-2">
+                            <FolderPlus className="h-4 w-4" />
+                            <span>Dodaj projekt</span>
+                          </div>
+                        ) : (
+                          <Tooltip>
+                            <TooltipTrigger>
+                              <FolderPlus className="h-4 w-4" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                              Dodaj projekt
+                            </TooltipContent>
+                          </Tooltip>
+                        )}
+                      </Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
+                )}
 
                 {/* Projects List */}
                 <div className="mt-4">
@@ -106,31 +136,6 @@ const SidebarRender = () => {
                     </SidebarMenuItem>
                   ))}
                 </div>
-
-                {/* Add Project button for MANAGER role */}
-                {user.role === "ROLE_MANAGER" && (
-                  <SidebarMenuItem className="mt-4 h-10">
-                    <SidebarMenuButton asChild>
-                      <Link to="/dashboard/projects/new">
-                        {state === "expanded" ? (
-                          <div className="flex items-center gap-2">
-                            <FolderPlus className="h-4 w-4" />
-                            <span>Dodaj projekt</span>
-                          </div>
-                        ) : (
-                          <Tooltip>
-                            <TooltipTrigger>
-                              <FolderPlus className="h-4 w-4" />
-                            </TooltipTrigger>
-                            <TooltipContent side="right">
-                              Dodaj projekt
-                            </TooltipContent>
-                          </Tooltip>
-                        )}
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>

@@ -2,19 +2,32 @@ import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from "@/components/ui/select";
 import { toast } from "sonner";
 import api from "@/api/axiosInstance";
 import { useAuth } from "@/auth/AuthProvider";
 
 const STATUS_OPTIONS = [
-  "TODO",
-  "IN_PROGRESS",
-  "DONE",
-  "TO_REVIEW",
-  "VERIFIED",
-  "ARCHIVED",
+  { value: "TODO", label: "Do zrobienia" },
+  { value: "IN_PROGRESS", label: "W trakcie" },
+  { value: "DONE", label: "Zrobione" },
+  { value: "TO_REVIEW", label: "Do sprawdzenia" },
+  { value: "VERIFIED", label: "Zweryfikowane" },
+  { value: "ARCHIVED", label: "Zarchiwizowane" },
 ];
-const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH"];
+const PRIORITY_OPTIONS = [
+  { value: "LOW", label: "Niski" },
+  { value: "MEDIUM", label: "Średni" },
+  { value: "HIGH", label: "Wysoki" },
+];
 
 const EditTask = () => {
   const { id, taskId } = useParams();
@@ -60,6 +73,20 @@ const EditTask = () => {
     }));
   };
 
+  const handleStatusChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      status: value,
+    }));
+  };
+
+  const handlePriorityChange = (value) => {
+    setForm((prev) => ({
+      ...prev,
+      priority: value,
+    }));
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -95,63 +122,68 @@ const EditTask = () => {
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-xs mb-1">Tytuł</label>
-              <input
+              <Input
                 type="text"
                 name="title"
                 value={form.title}
                 onChange={handleChange}
-                className="border rounded px-2 py-1 w-full"
                 required
               />
             </div>
             <div>
               <label className="block text-xs mb-1">Opis</label>
-              <textarea
+              <Textarea
                 name="description"
                 value={form.description}
                 onChange={handleChange}
-                className="border rounded px-2 py-1 w-full"
                 rows={3}
               />
             </div>
             <div>
               <label className="block text-xs mb-1">Status</label>
-              <select
-                name="status"
+              <Select
                 value={form.status}
-                onChange={handleChange}
-                className="border rounded px-2 py-1 w-full"
+                onValueChange={handleStatusChange}
+                defaultValue={form.status}
               >
-                {STATUS_OPTIONS.map((status) => (
-                  <option key={status} value={status}>
-                    {status}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Wybierz status" />
+                </SelectTrigger>
+                <SelectContent>
+                  {STATUS_OPTIONS.map((status) => (
+                    <SelectItem key={status.value} value={status.value}>
+                      {status.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="block text-xs mb-1">Priorytet</label>
-              <select
-                name="priority"
+              <Select
                 value={form.priority}
-                onChange={handleChange}
-                className="border rounded px-2 py-1 w-full"
+                onValueChange={handlePriorityChange}
+                defaultValue={form.priority}
               >
-                {PRIORITY_OPTIONS.map((priority) => (
-                  <option key={priority} value={priority}>
-                    {priority}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger>
+                  <SelectValue placeholder="Wybierz priorytet" />
+                </SelectTrigger>
+                <SelectContent>
+                  {PRIORITY_OPTIONS.map((priority) => (
+                    <SelectItem key={priority.value} value={priority.value}>
+                      {priority.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
             <div>
               <label className="block text-xs mb-1">Termin</label>
-              <input
+              <Input
                 type="datetime-local"
                 name="dueDate"
                 value={form.dueDate}
                 onChange={handleChange}
-                className="border rounded px-2 py-1 w-full"
               />
             </div>
             <div className="flex gap-2 mt-4">

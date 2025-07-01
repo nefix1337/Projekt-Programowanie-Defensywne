@@ -38,16 +38,11 @@ export default function Settings() {
         
           <Tabs defaultValue="general" className="w-full">
             <TabsList>
-              <TabsTrigger  value="general">Ogólne informacje</TabsTrigger>
+        
               <TabsTrigger  value="2fa">2FA</TabsTrigger>
             </TabsList>
 
-            {/* Zakładka Ogólne informacje */}
-            <TabsContent value="general">
-              <div className="p-4">
-                <p>Tu będą ogólne informacje o użytkowniku.</p>
-              </div>
-            </TabsContent>
+            
 
             {/* Zakładka 2FA */}
             <TabsContent value="2fa">

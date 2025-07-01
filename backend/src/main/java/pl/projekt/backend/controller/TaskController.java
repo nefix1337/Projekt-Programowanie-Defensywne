@@ -90,10 +90,10 @@ public class TaskController {
      */
     @Operation(summary = "Pobieranie zadań zalogowanego użytkownika")
     @GetMapping("/my")
-    public ResponseEntity<List<Task>> getMyTasks() {
+    public ResponseEntity<List<TaskWithAssigneeResponse>> getMyTasks() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String username = authentication.getName();
-        return ResponseEntity.ok(taskService.getTasksForUser(username));
+        return ResponseEntity.ok(taskService.getTasksForUserWithAssignee(username));
     }
 
     /**

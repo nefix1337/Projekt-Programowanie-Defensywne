@@ -139,14 +139,14 @@ class TaskControllerTest {
         // Symulacja SecurityContextHolder
         org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .setAuthentication(new org.springframework.security.authentication.UsernamePasswordAuthenticationToken("jan.kowalski@example.com", null));
-        when(taskService.getTasksForUser("jan.kowalski@example.com")).thenReturn(taskList);
+        when(taskService.getTasksForUserWithAssignee("jan.kowalski@example.com")).thenReturn(taskWithAssigneeList);
 
-        ResponseEntity<List<Task>> response = taskController.getMyTasks();
+        ResponseEntity<List<TaskWithAssigneeResponse>> response = taskController.getMyTasks();
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCodeValue());
-        assertEquals(taskList, response.getBody());
-        verify(taskService).getTasksForUser("jan.kowalski@example.com");
+        assertEquals(taskWithAssigneeList, response.getBody());
+        verify(taskService).getTasksForUserWithAssignee("jan.kowalski@example.com");
     }
 
     /**

@@ -58,7 +58,7 @@ public class Task {
     @JoinColumn(name = "assigned_to")
     private User assignedTo;
 
-    @OneToMany(mappedBy = "task")
+    @OneToMany(mappedBy = "task", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TaskComment> comments;
 
 

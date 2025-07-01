@@ -14,16 +14,21 @@ import {
   TableHead,
   TableCell,
 } from "@/components/ui/table";
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 
 const STATUS_OPTIONS = [
-  "TODO",
-  "IN_PROGRESS",
-  "DONE",
-  "TO_REVIEW",
-  "VERIFIED",
-  "ARCHIVED",
+  { value: "TODO", label: "Do zrobienia" },
+  { value: "IN_PROGRESS", label: "W trakcie" },
+  { value: "DONE", label: "Zrobione" },
+  { value: "TO_REVIEW", label: "Do sprawdzenia" },
+  { value: "VERIFIED", label: "Zweryfikowane" },
+  { value: "ARCHIVED", label: "Zarchiwizowane" },
 ];
-const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH"];
+const PRIORITY_OPTIONS = [
+  { value: "LOW", label: "Niski" },
+  { value: "MEDIUM", label: "Średni" },
+  { value: "HIGH", label: "Wysoki" },
+];
 
 const ProjectDetails = () => {
   const { id } = useParams();
@@ -35,9 +40,9 @@ const ProjectDetails = () => {
   const [tasksLoading, setTasksLoading] = useState(true);
 
   // Stan filtrów
-  const [statusFilter, setStatusFilter] = useState("");
-  const [priorityFilter, setPriorityFilter] = useState("");
-  const [assigneeFilter, setAssigneeFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState("__ALL__");
+  const [priorityFilter, setPriorityFilter] = useState("__ALL__");
+  const [assigneeFilter, setAssigneeFilter] = useState("__ALL__");
 
   // Stan sortowania
   const [sortBy, setSortBy] = useState("");
@@ -70,15 +75,16 @@ const ProjectDetails = () => {
           response = await api.get(`/tasks/project/${id}/all`, {
             headers: { Authorization: `Bearer ${getToken()}` }
           });
-          setTasks(response.data);
+          setTasks(Array.isArray(response.data) ? response.data : []);
         } else {
           response = await api.get("/tasks/my", {
             headers: { Authorization: `Bearer ${getToken()}` }
           });
-          setTasks(response.data);
+          setTasks(Array.isArray(response.data) ? response.data : []);
         }
       } catch (error) {
         toast.error("Nie udało się pobrać zadań");
+        setTasks([]); // <- ważne!
       } finally {
         setTasksLoading(false);
       }
@@ -106,7 +112,7 @@ const ProjectDetails = () => {
         headers: { Authorization: `Bearer ${getToken()}` }
       });
       toast.success("Projekt został usunięty");
-      navigate("/dashboard/projects");
+      navigate("/dashboard");
     } catch (error) {
       toast.error("Nie udało się usunąć projektu");
     }
@@ -114,18 +120,18 @@ const ProjectDetails = () => {
 
   // Filtrowanie zadań
   const filteredTasks = tasks.filter((task) => {
-    const statusOk = statusFilter ? task.status === statusFilter : true;
-    const priorityOk = priorityFilter ? task.priority === priorityFilter : true;
-    const assigneeOk = assigneeFilter
-      ? (
+    const statusOk = statusFilter === "__ALL__" ? true : task.status === statusFilter;
+    const priorityOk = priorityFilter === "__ALL__" ? true : task.priority === priorityFilter;
+    const assigneeOk = assigneeFilter === "__ALL__"
+      ? true
+      : (
           (task.assignedFirstName && task.assignedLastName
             ? `${task.assignedFirstName} ${task.assignedLastName}`
             : task.assignedTo && typeof task.assignedTo === "object"
             ? `${task.assignedTo.firstName} ${task.assignedTo.lastName}`
             : "-"
           ) === assigneeFilter
-        )
-      : true;
+        );
     return statusOk && priorityOk && assigneeOk;
   });
 
@@ -199,9 +205,17 @@ const ProjectDetails = () => {
       VERIFIED: "bg-purple-200 text-purple-800",
       ARCHIVED: "bg-gray-400 text-white",
     };
+    const labels = {
+      TODO: "Do zrobienia",
+      IN_PROGRESS: "W trakcie",
+      DONE: "Zrobione",
+      TO_REVIEW: "Do sprawdzenia",
+      VERIFIED: "Zweryfikowane",
+      ARCHIVED: "Zarchiwizowane",
+    };
     return (
       <span className={`px-2 py-1 rounded text-xs font-semibold ${colors[status] || "bg-gray-100 text-gray-700"}`}>
-        {status.replace("_", " ")}
+        {labels[status] || status}
       </span>
     );
   };
@@ -213,9 +227,14 @@ const ProjectDetails = () => {
       MEDIUM: "bg-yellow-100 text-yellow-700",
       HIGH: "bg-red-100 text-red-700",
     };
+    const labels = {
+      LOW: "Niski",
+      MEDIUM: "Średni",
+      HIGH: "Wysoki",
+    };
     return (
       <span className={`px-2 py-1 rounded text-xs font-semibold ${colors[priority] || "bg-gray-100 text-gray-700"}`}>
-        {priority}
+        {labels[priority] || priority}
       </span>
     );
   };
@@ -321,48 +340,51 @@ const ProjectDetails = () => {
             <div className="flex flex-wrap gap-4 mb-4">
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Status</label>
-                <select
-                  className="border rounded px-2 py-1"
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                >
-                  <option value="">Wszystkie</option>
-                  {STATUS_OPTIONS.map((status) => (
-                    <option key={status} value={status}>
-                      {status}
-                    </option>
-                  ))}
-                </select>
+                <Select value={statusFilter} onValueChange={setStatusFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Wszystkie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__ALL__">Wszystkie</SelectItem>
+                    {STATUS_OPTIONS.map((status) => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Priorytet</label>
-                <select
-                  className="border rounded px-2 py-1"
-                  value={priorityFilter}
-                  onChange={(e) => setPriorityFilter(e.target.value)}
-                >
-                  <option value="">Wszystkie</option>
-                  {PRIORITY_OPTIONS.map((priority) => (
-                    <option key={priority} value={priority}>
-                      {priority}
-                    </option>
-                  ))}
-                </select>
+                <Select value={priorityFilter} onValueChange={setPriorityFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Wszystkie" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__ALL__">Wszystkie</SelectItem>
+                    {PRIORITY_OPTIONS.map((priority) => (
+                      <SelectItem key={priority.value} value={priority.value}>
+                        {priority.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
               <div>
                 <label className="block text-xs text-gray-500 mb-1">Przypisany do</label>
-                <select
-                  className="border rounded px-2 py-1"
-                  value={assigneeFilter}
-                  onChange={(e) => setAssigneeFilter(e.target.value)}
-                >
-                  <option value="">Wszyscy</option>
-                  {assignees.map((name) => (
-                    <option key={name} value={name}>
-                      {name}
-                    </option>
-                  ))}
-                </select>
+                <Select value={assigneeFilter} onValueChange={setAssigneeFilter}>
+                  <SelectTrigger className="w-40">
+                    <SelectValue placeholder="Wszyscy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__ALL__">Wszyscy</SelectItem>
+                    {assignees.map((name) => (
+                      <SelectItem key={name} value={name}>
+                        {name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
             {/* KONIEC FILTRÓW */}

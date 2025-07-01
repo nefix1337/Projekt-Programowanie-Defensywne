@@ -45,11 +45,11 @@ public class Project {
     private ProjectStatus status;
 
     @JsonIgnore 
-    @OneToMany(mappedBy = "project")
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private Set<ProjectMember> members;
 
     @JsonIgnore 
-    @OneToMany(mappedBy = "project")
+    @OneToMany(mappedBy = "project", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Task> tasks;
 
     @Column(name = "icon", length = 8)

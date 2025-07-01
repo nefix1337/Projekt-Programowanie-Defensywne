@@ -21,7 +21,12 @@ import {
 } from "@/components/ui/popover";
 import api from "@/api/axiosInstance";
 
-const projectStatuses = ["NEW", "IN_PROGRESS", "COMPLETED", "ON_HOLD"];
+const projectStatuses = [
+  { value: "NEW", label: "Nowy" },
+  { value: "IN_PROGRESS", label: "W trakcie" },
+  { value: "COMPLETED", label: "Zakończony" },
+  { value: "ON_HOLD", label: "Wstrzymany" }
+];
 
 const NewProject = () => {
   const navigate = useNavigate();
@@ -68,7 +73,7 @@ const NewProject = () => {
       });
 
       toast.success("Projekt został utworzony");
-      navigate("/dashboard/projects");
+      navigate("/dashboard");
     } catch (error) {
       console.error("Error creating project:", error);
       toast.error(
@@ -86,8 +91,8 @@ const NewProject = () => {
           <CardTitle>Nowy projekt</CardTitle>
         </CardHeader>
         <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div className="flex gap-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="flex flex-col md:flex-row gap-4">
               <div className="flex-1 space-y-2">
                 <label htmlFor="name" className="text-sm font-medium">
                   Nazwa projektu
@@ -101,9 +106,8 @@ const NewProject = () => {
                   required
                 />
               </div>
-              
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
+              <div className="flex flex-col justify-end items-start md:items-end min-w-[160px]">
+                <label className="text-sm font-medium mb-1 md:mb-2 whitespace-nowrap">
                   Ikona projektu
                 </label>
                 <Popover>
@@ -136,25 +140,28 @@ const NewProject = () => {
               />
             </div>
 
-            <div className="space-y-2">
-              <label htmlFor="status" className="text-sm font-medium">
-                Status projektu
-              </label>
-              <Select
-                value={formData.status}
-                onValueChange={handleStatusChange}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Wybierz status" />
-                </SelectTrigger>
-                <SelectContent>
-                  {projectStatuses.map(status => (
-                    <SelectItem key={status} value={status}>
-                      {status.replace('_', ' ')}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            <div className="flex flex-col md:flex-row md:items-center gap-4">
+              <div className="flex-1 space-y-2">
+                <label htmlFor="status" className="text-sm font-medium">
+                  Status projektu
+                </label>
+                <Select
+                  value={formData.status}
+                  onValueChange={handleStatusChange}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Wybierz status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {projectStatuses.map(status => (
+                      <SelectItem key={status.value} value={status.value}>
+                        {status.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1" />
             </div>
 
             <div className="flex justify-end space-x-4">
