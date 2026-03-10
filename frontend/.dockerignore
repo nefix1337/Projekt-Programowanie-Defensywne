@@ -1,0 +1,16 @@
+node_modules/
+dist/
+build/
+.git
+.gitignore
+.DS_Store
+*.log
+.env
+.env.local
+.idea/
+.vscode/
+*.swp
+*.swo
+.eslintignore
+coverage/
+.test-cache/

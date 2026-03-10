@@ -65,13 +65,19 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // frontend
+        // Obsługuj zarówno rozwój lokalny jak i Docker
+        configuration.setAllowedOrigins(List.of(
+                "http://localhost:3000",      // Docker Frontend
+                "http://localhost:5173",      // Vite Dev Server
+                "http://localhost:8080",      // Local Backend
+                "http://frontend:3000"        // Docker network hostname
+        ));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setAllowCredentials(true);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", configuration); // <- ważne
+        source.registerCorsConfiguration("/**", configuration);
         return source;
     }
 }

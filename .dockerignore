@@ -1,0 +1,12 @@
+.git
+.gitignore
+.github
+.gitlab-ci.yml
+.travis.yml
+.DS_Store
+*.md
+node_modules/
+npm-debug.log
+yarn-error.log
+.env
+.env.local
