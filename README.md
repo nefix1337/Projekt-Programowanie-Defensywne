@@ -41,10 +41,6 @@ Przy każdym starcie backendu jest automatycznie tworzone konto administratora:
 3. Wpisz hasło: `admin123`
 4. Kliknij "Zaloguj się"
 
-### ⚠️ WAŻNE DLA PRODUKCJI
-- **ZMIEŃ HASŁO** natychmiast po pierwszym logowaniu!
-- **ZMIEŃ EMAIL** na swoją rzeczywistą adres emaila
-- Nie udostępniaj tych danych innym osobom
 
 ## Struktura projektu
 
