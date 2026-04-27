@@ -22,6 +22,25 @@ services:
     networks:
       - projekt-network
 
+  # RabbitMQ Broker
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: projekt-rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - projekt-network
+
   # Spring Boot Backend
   backend:
     build:
@@ -31,6 +50,8 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/projekt
       SPRING_DATASOURCE_USERNAME: postgres
@@ -38,17 +59,49 @@ services:
       SPRING_JPA_HIBERNATE_DDL_AUTO: update
       SPRING_JPA_SHOW_SQL: 'true'
       SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: org.hibernate.dialect.PostgreSQLDialect
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      TASKS_RABBITMQ_REPLY_TIMEOUT_MS: 10000
       JWT_SECRET: f1b2a02fc00a55536c7b1495ed87d8e1979b761de7b4e57048000d0b91ed23f786ab23004a6f4ebaba88d22b3faa29ef2d5b3e7a0c8972ea1cff32d8f2efd7d9
       JWT_EXPIRATION: 86400000
     ports:
       - "8080:8080"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/actuator/health"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - projekt-network
+
+  # Distributed Write Node
+  node:
+    build:
+      context: ./node
+      dockerfile: Dockerfile
+    container_name: projekt-node-1
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_HOST: postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DATABASE: projekt
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_JPA_SHOW_SQL: 'true'
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+    restart: unless-stopped
     networks:
       - projekt-network
 

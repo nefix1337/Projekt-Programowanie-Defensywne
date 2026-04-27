@@ -8,6 +8,11 @@ backend/.env
 backend/.env.local
 backend/node_modules/
 
+# Node
+node/target/
+node/.env
+node/.env.local
+
 # Frontend
 frontend/dist/
 frontend/node_modules/

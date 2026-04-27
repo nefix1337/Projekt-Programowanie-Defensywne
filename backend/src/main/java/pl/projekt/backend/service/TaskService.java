@@ -1,10 +1,15 @@
 package pl.projekt.backend.service;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
+import org.springframework.core.ParameterizedTypeReference;
 import jakarta.persistence.EntityNotFoundException;
+import pl.projekt.backend.config.TaskRabbitMqConfig;
 import pl.projekt.backend.model.*;
+import pl.projekt.backend.messaging.CreateTaskCommand;
+import pl.projekt.backend.messaging.CreateTaskResult;
 import pl.projekt.backend.repository.*;
 import pl.projekt.backend.dto.CreateTaskRequest;
 import pl.projekt.backend.dto.UpdateTaskRequest;
@@ -26,29 +31,41 @@ public class TaskService {
     private final ProjectRepository projectRepository;
     private final UserRepository userRepository;
     private final TaskCommentRepository taskCommentRepository;
+    private final RabbitTemplate rabbitTemplate;
 
     public Task createTask(CreateTaskRequest request) {
-        Project project = projectRepository.findById(request.getProjectId())
-                .orElseThrow(() -> new RuntimeException("Project not found"));
         String currentUserEmail = org.springframework.security.core.context.SecurityContextHolder.getContext()
                 .getAuthentication().getName();
-        User createdBy = userRepository.findByEmail(currentUserEmail)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        User assignedTo = userRepository.findById(request.getAssignedToId())
-                .orElseThrow(() -> new RuntimeException("Assigned user not found"));
+        CreateTaskCommand command = new CreateTaskCommand(
+                request.getProjectId(),
+                request.getTitle(),
+                request.getDescription(),
+                request.getStatus(),
+                request.getPriority(),
+                request.getDueDate(),
+                request.getAssignedToId(),
+                currentUserEmail
+        );
 
-        Task task = new Task();
-        task.setProject(project);
-        task.setTitle(request.getTitle());
-        task.setDescription(request.getDescription());
-        task.setStatus(request.getStatus());
-        task.setPriority(request.getPriority());
-        task.setDueDate(request.getDueDate());
-        task.setCreatedBy(createdBy);
-        task.setAssignedTo(assignedTo);
+        CreateTaskResult result = rabbitTemplate.convertSendAndReceiveAsType(
+                TaskRabbitMqConfig.TASK_EXCHANGE,
+                TaskRabbitMqConfig.TASK_CREATE_ROUTING_KEY,
+                command,
+                new ParameterizedTypeReference<CreateTaskResult>() {}
+        );
 
-        return taskRepository.save(task);
+        if (result == null) {
+            throw new RuntimeException("Task creation timed out");
+        }
+        if (!result.isSuccess()) {
+            throw new RuntimeException(result.getErrorMessage() != null
+                    ? result.getErrorMessage()
+                    : "Task creation failed");
+        }
+
+        return taskRepository.findById(result.getTaskId())
+                .orElseThrow(() -> new RuntimeException("Created task not found"));
     }
 
     public Task updateTask(Long id, UpdateTaskRequest request) {

@@ -5,9 +5,14 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import pl.projekt.backend.config.TaskRabbitMqConfig;
 import pl.projekt.backend.dto.*;
+import pl.projekt.backend.messaging.CreateTaskCommand;
+import pl.projekt.backend.messaging.CreateTaskResult;
 import pl.projekt.backend.model.*;
 import pl.projekt.backend.repository.*;
 
@@ -28,6 +33,8 @@ class TaskServiceTest {
     @Mock private TaskRepository taskRepository;
     @Mock private ProjectRepository projectRepository;
     @Mock private UserRepository userRepository;
+    @Mock private TaskCommentRepository taskCommentRepository;
+    @Mock private RabbitTemplate rabbitTemplate;
 
     @InjectMocks private TaskService taskService;
 
@@ -83,10 +90,13 @@ class TaskServiceTest {
         req.setDueDate(LocalDateTime.now().plusDays(1));
         req.setAssignedToId(assignedTo.getId());
 
-        when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
-        when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
-        when(userRepository.findById(assignedTo.getId())).thenReturn(Optional.of(assignedTo));
-        when(taskRepository.save(any(Task.class))).thenReturn(task);
+        when(rabbitTemplate.convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_CREATE_ROUTING_KEY),
+                any(CreateTaskCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<CreateTaskResult>>any()
+        )).thenReturn(new CreateTaskResult(true, task.getId(), null));
+        when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
 
        
         Authentication authentication = mock(Authentication.class);
@@ -97,7 +107,14 @@ class TaskServiceTest {
 
         assertNotNull(result);
         assertEquals("Test Task", result.getTitle());
-        verify(taskRepository).save(any(Task.class));
+        verify(rabbitTemplate).convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_CREATE_ROUTING_KEY),
+                any(CreateTaskCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<CreateTaskResult>>any()
+        );
+        verify(taskRepository).findById(task.getId());
+        verify(taskRepository, never()).save(any(Task.class));
     }
 
     /**

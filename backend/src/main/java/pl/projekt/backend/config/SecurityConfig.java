@@ -45,6 +45,7 @@ public class SecurityConfig {
                                 "/swagger-ui-custom.html",
                                 "/swagger-ui.html",
                                 "/swagger-ui/index.html",
+                                "/actuator/health",
                                 "/api-docs/**",
                                 "/swagger-ui/**"
                         ).permitAll()
@@ -52,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/projects/**").hasRole("MANAGER")
                         .requestMatchers(HttpMethod.PUT, "/api/projects/**").hasRole("MANAGER")
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/**").hasRole("MANAGER")
+                        .requestMatchers(HttpMethod.POST, "/api/tasks").hasAnyRole("MANAGER", "ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/tasks/*/to-review").permitAll()
                         .anyRequest().authenticated()
                 )
