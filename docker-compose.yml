@@ -64,6 +64,8 @@ services:
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
       TASKS_RABBITMQ_REPLY_TIMEOUT_MS: 10000
+      NODE_MONITORING_EXPECTED_NODES: node-1:100,node-2:50,node-3:10
+      NODE_MONITORING_TTL_SECONDS: 15
       JWT_SECRET: f1b2a02fc00a55536c7b1495ed87d8e1979b761de7b4e57048000d0b91ed23f786ab23004a6f4ebaba88d22b3faa29ef2d5b3e7a0c8972ea1cff32d8f2efd7d9
       JWT_EXPIRATION: 86400000
     ports:
@@ -78,11 +80,12 @@ services:
     networks:
       - projekt-network
 
-  # Distributed Write Node
-  node:
+  # Distributed Write Nodes
+  node-1:
     build:
       context: ./node
       dockerfile: Dockerfile
+    image: projekt-node:latest
     container_name: projekt-node-1
     depends_on:
       postgres:
@@ -101,6 +104,70 @@ services:
       SPRING_RABBITMQ_PORT: 5672
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+      NODE_ID: node-1
+      NODE_WEIGHT: 100
+      NODE_LEADER_TTL_SECONDS: 15
+      NODE_LEADER_ELECTION_INTERVAL_MS: 5000
+    restart: unless-stopped
+    networks:
+      - projekt-network
+
+  node-2:
+    image: projekt-node:latest
+    container_name: projekt-node-2
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      node-1:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_HOST: postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DATABASE: projekt
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_JPA_SHOW_SQL: 'true'
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      NODE_ID: node-2
+      NODE_WEIGHT: 50
+      NODE_LEADER_TTL_SECONDS: 15
+      NODE_LEADER_ELECTION_INTERVAL_MS: 5000
+    restart: unless-stopped
+    networks:
+      - projekt-network
+
+  node-3:
+    image: projekt-node:latest
+    container_name: projekt-node-3
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+      node-1:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_HOST: postgres
+      SPRING_DATASOURCE_PORT: 5432
+      SPRING_DATASOURCE_DATABASE: projekt
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_JPA_HIBERNATE_DDL_AUTO: none
+      SPRING_JPA_SHOW_SQL: 'true'
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: 5672
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+      NODE_ID: node-3
+      NODE_WEIGHT: 10
+      NODE_LEADER_TTL_SECONDS: 15
+      NODE_LEADER_ELECTION_INTERVAL_MS: 5000
     restart: unless-stopped
     networks:
       - projekt-network

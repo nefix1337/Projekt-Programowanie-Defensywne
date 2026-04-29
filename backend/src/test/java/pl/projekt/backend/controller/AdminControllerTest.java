@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import pl.projekt.backend.dto.ChangeRoleRequest;
 import pl.projekt.backend.dto.UserResponse;
 import pl.projekt.backend.service.AdminService;
+import pl.projekt.backend.service.NodeMonitoringService;
 
 import java.util.List;
 
@@ -25,6 +26,9 @@ class AdminControllerTest {
 
     @Mock
     private AdminService adminService;
+
+    @Mock
+    private NodeMonitoringService nodeMonitoringService;
 
     @InjectMocks
     private AdminController adminController;

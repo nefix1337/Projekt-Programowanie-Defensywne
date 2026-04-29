@@ -14,6 +14,7 @@ public class TaskRabbitMqConfig {
     public static final String TASK_CREATE_QUEUE = "tasks.create";
     public static final String TASK_EXCHANGE = "tasks.exchange";
     public static final String TASK_CREATE_ROUTING_KEY = "tasks.create";
+    public static final String TASK_CREATE_LISTENER_ID = "taskCreateListener";
 
     @Bean
     public Queue taskCreateQueue() {

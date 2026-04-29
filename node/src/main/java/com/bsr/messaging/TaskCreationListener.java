@@ -12,7 +12,11 @@ import org.springframework.stereotype.Component;
 public class TaskCreationListener {
     private final TaskCreationService taskCreationService;
 
-    @RabbitListener(queues = TaskRabbitMqConfig.TASK_CREATE_QUEUE)
+    @RabbitListener(
+            id = TaskRabbitMqConfig.TASK_CREATE_LISTENER_ID,
+            queues = TaskRabbitMqConfig.TASK_CREATE_QUEUE,
+            autoStartup = "false"
+    )
     public CreateTaskResult handle(CreateTaskCommand command) {
         try {
             Task task = taskCreationService.createTask(command);

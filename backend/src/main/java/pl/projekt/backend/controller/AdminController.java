@@ -1,8 +1,10 @@
 package pl.projekt.backend.controller;
 
 import pl.projekt.backend.dto.ChangeRoleRequest;
+import pl.projekt.backend.dto.NodeStatusResponse;
 import pl.projekt.backend.dto.UserResponse;
 import pl.projekt.backend.service.AdminService;
+import pl.projekt.backend.service.NodeMonitoringService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,6 +26,7 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final NodeMonitoringService nodeMonitoringService;
 
     /**
      * Zmienia rolę użytkownika na podstawie przesłanego żądania.
@@ -51,6 +54,29 @@ public class AdminController {
     @GetMapping("/users")
     public ResponseEntity<List<UserResponse>> getAllUsers() {
         return ResponseEntity.ok(adminService.getAllUsers());
+    }
+
+    @Operation(summary = "Monitoring wezlow")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/nodes")
+    public ResponseEntity<List<NodeStatusResponse>> getNodes() {
+        return ResponseEntity.ok(nodeMonitoringService.getStatuses());
+    }
+
+    @Operation(summary = "Wprowadzenie awarii wezla")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/nodes/{nodeId}/failure")
+    public ResponseEntity<Void> injectNodeFailure(@PathVariable String nodeId) {
+        nodeMonitoringService.injectFailure(nodeId);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Przywrocenie wezla")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/nodes/{nodeId}/recovery")
+    public ResponseEntity<Void> recoverNode(@PathVariable String nodeId) {
+        nodeMonitoringService.recover(nodeId);
+        return ResponseEntity.noContent().build();
     }
     
 }
