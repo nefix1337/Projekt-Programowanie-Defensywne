@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import pl.projekt.backend.dto.NodeEventResponse;
 import pl.projekt.backend.dto.NodeStatusResponse;
 
 import jakarta.annotation.PostConstruct;
@@ -25,6 +26,9 @@ public class NodeMonitoringService {
 
     @Value("${node.monitoring.ttl-seconds:15}")
     private long ttlSeconds;
+
+    @Value("${node.monitoring.events-limit:20}")
+    private int eventsLimit;
 
     @PostConstruct
     public void initialize() {
@@ -63,10 +67,28 @@ public class NodeMonitoringService {
 
     public void injectFailure(String nodeId) {
         setForcedDown(nodeId, true);
+        recordEvent("backend", "NODE_FAILURE_INJECTED", "nodeId=" + nodeId);
     }
 
     public void recover(String nodeId) {
         setForcedDown(nodeId, false);
+        recordEvent("backend", "NODE_RECOVERED", "nodeId=" + nodeId);
+    }
+
+    public List<NodeEventResponse> getEvents() {
+        ensureEventTable();
+        return jdbcTemplate.query("""
+                SELECT id, event_time, node_id, event_type, details
+                FROM distributed_node_events
+                ORDER BY event_time DESC, id DESC
+                LIMIT ?
+                """, (resultSet, rowNum) -> new NodeEventResponse(
+                        resultSet.getLong("id"),
+                        resultSet.getTimestamp("event_time").toLocalDateTime(),
+                        resultSet.getString("node_id"),
+                        resultSet.getString("event_type"),
+                        resultSet.getString("details")
+                ), eventsLimit);
     }
 
     private void setForcedDown(String nodeId, boolean forcedDown) {
@@ -136,6 +158,27 @@ public class NodeMonitoringService {
         jdbcTemplate.execute("""
                 ALTER TABLE node_leader_candidates
                 ADD COLUMN IF NOT EXISTS forced_down BOOLEAN NOT NULL DEFAULT FALSE
+                """);
+        ensureEventTable();
+    }
+
+    private void recordEvent(String nodeId, String eventType, String details) {
+        ensureEventTable();
+        jdbcTemplate.update("""
+                INSERT INTO distributed_node_events (event_time, node_id, event_type, details)
+                VALUES (?, ?, ?, ?)
+                """, Timestamp.valueOf(LocalDateTime.now()), nodeId, eventType, details);
+    }
+
+    private void ensureEventTable() {
+        jdbcTemplate.execute("""
+                CREATE TABLE IF NOT EXISTS distributed_node_events (
+                    id BIGSERIAL PRIMARY KEY,
+                    event_time TIMESTAMP NOT NULL,
+                    node_id VARCHAR(128) NOT NULL,
+                    event_type VARCHAR(64) NOT NULL,
+                    details TEXT
+                )
                 """);
     }
 

@@ -7,7 +7,7 @@ Aplikacja webowa do zarządzania projektami i zadaniami z wbudowaną autentykacj
 - **Frontend**: React 19 + Vite + TailwindCSS
 - **Backend**: Spring Boot 3.4.4 (Java 21)
 - **Baza danych**: PostgreSQL 16
-- **Message Broker**: Apache Kafka (Event Sourcing)
+- **Message Broker**: RabbitMQ
 - **Konteneryzacja**: Docker & Docker Compose
 
 ## Szybki start
@@ -24,6 +24,43 @@ Aplikacja będzie dostępna pod:
 - Frontend: http://localhost:3000/login
 - Backend API: http://localhost:8080
 - Swagger UI: http://localhost:8080/swagger-ui-custom.html
+- RabbitMQ Management: http://localhost:15672 (`guest` / `guest`)
+
+## Architektura rozproszona
+
+Projekt ma osobny backend REST oraz trzy wezly zapisu `node-1`, `node-2`, `node-3`.
+Backend wysyla operacje zapisu na zadaniach przez RabbitMQ do aktywnego lidera.
+
+Obslugiwane komendy RabbitMQ:
+
+- `tasks.create` - tworzenie zadania
+- `tasks.update` - aktualizacja zadania
+- `tasks.delete` - usuwanie zadania
+- `tasks.review` - przekazanie zadania do sprawdzenia
+- `tasks.comment` - dodanie komentarza
+
+Wybor lidera:
+
+- kazdy wezel cyklicznie zapisuje heartbeat w tabeli `node_leader_candidates`
+- liderem zostaje aktywny wezel o najwyzszej wadze
+- tylko lider uruchamia listenery RabbitMQ dla operacji zapisu
+- po awarii lidera kolejny aktywny wezel przejmuje przetwarzanie po uplywie TTL
+
+Monitoring:
+
+- panel administratora pokazuje status wezlow, aktualnego lidera i ostatni heartbeat
+- przyciski `Awaria` i `Przywroc` pozwalaja zasymulowac awarie wezla
+- historia zdarzen jest zapisywana w tabeli `distributed_node_events`
+- endpointy monitoringu sa dostepne pod `/api/admin/nodes` oraz `/api/admin/nodes/events`
+
+Przykladowy scenariusz demonstracji:
+
+1. Uruchom `docker-compose up -d --build`.
+2. Zaloguj sie jako `admin@example.com`.
+3. Wejdz do panelu administratora i sprawdz lidera.
+4. Kliknij `Awaria` przy aktualnym liderze.
+5. Po kilku sekundach kolejny wezel powinien zostac liderem.
+6. Dodaj lub zaktualizuj zadanie i sprawdz wpis w historii zdarzen.
 
 ## 🔐 Domyślne konto administratora
 
@@ -84,6 +121,10 @@ Przy każdym starcie backendu jest automatycznie tworzone konto administratora:
 - Zarządzanie zadaniami
 - Komentarze do zadań
 - Panel administratora
+- RabbitMQ dla operacji zapisu zadan
+- Wybor lidera wsrod wezlow zapisu
+- Heartbeat, wykrywanie awarii i przejecie lidera
+- Historia zdarzen systemu rozproszonego
 - CORS skonfigurowany dla bezpieczeństwa
 
 ## Zmienne środowiskowe

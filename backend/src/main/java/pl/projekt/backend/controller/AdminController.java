@@ -1,6 +1,7 @@
 package pl.projekt.backend.controller;
 
 import pl.projekt.backend.dto.ChangeRoleRequest;
+import pl.projekt.backend.dto.NodeEventResponse;
 import pl.projekt.backend.dto.NodeStatusResponse;
 import pl.projekt.backend.dto.UserResponse;
 import pl.projekt.backend.service.AdminService;
@@ -61,6 +62,13 @@ public class AdminController {
     @GetMapping("/nodes")
     public ResponseEntity<List<NodeStatusResponse>> getNodes() {
         return ResponseEntity.ok(nodeMonitoringService.getStatuses());
+    }
+
+    @Operation(summary = "Historia zdarzen wezlow")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/nodes/events")
+    public ResponseEntity<List<NodeEventResponse>> getNodeEvents() {
+        return ResponseEntity.ok(nodeMonitoringService.getEvents());
     }
 
     @Operation(summary = "Wprowadzenie awarii wezla")

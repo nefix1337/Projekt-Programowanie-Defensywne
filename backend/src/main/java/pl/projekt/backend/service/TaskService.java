@@ -8,8 +8,13 @@ import org.springframework.core.ParameterizedTypeReference;
 import jakarta.persistence.EntityNotFoundException;
 import pl.projekt.backend.config.TaskRabbitMqConfig;
 import pl.projekt.backend.model.*;
+import pl.projekt.backend.messaging.AddTaskCommentCommand;
 import pl.projekt.backend.messaging.CreateTaskCommand;
 import pl.projekt.backend.messaging.CreateTaskResult;
+import pl.projekt.backend.messaging.DeleteTaskCommand;
+import pl.projekt.backend.messaging.SetTaskStatusCommand;
+import pl.projekt.backend.messaging.TaskOperationResult;
+import pl.projekt.backend.messaging.UpdateTaskCommand;
 import pl.projekt.backend.repository.*;
 import pl.projekt.backend.dto.CreateTaskRequest;
 import pl.projekt.backend.dto.UpdateTaskRequest;
@@ -69,25 +74,28 @@ public class TaskService {
     }
 
     public Task updateTask(Long id, UpdateTaskRequest request) {
-        Task task = taskRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
+        TaskOperationResult result = sendTaskOperation(
+                TaskRabbitMqConfig.TASK_UPDATE_ROUTING_KEY,
+                new UpdateTaskCommand(
+                        id,
+                        request.getTitle(),
+                        request.getDescription(),
+                        request.getStatus(),
+                        request.getPriority(),
+                        request.getDueDate(),
+                        request.getAssignedToId()
+                )
+        );
 
-        if (request.getTitle() != null) task.setTitle(request.getTitle());
-        if (request.getDescription() != null) task.setDescription(request.getDescription());
-        if (request.getStatus() != null) task.setStatus(request.getStatus());
-        if (request.getPriority() != null) task.setPriority(request.getPriority());
-        if (request.getDueDate() != null) task.setDueDate(request.getDueDate());
-        if (request.getAssignedToId() != null) {
-            User assignedTo = userRepository.findById(request.getAssignedToId())
-                    .orElseThrow(() -> new RuntimeException("Assigned user not found"));
-            task.setAssignedTo(assignedTo);
-        }
-
-        return taskRepository.save(task);
+        return taskRepository.findById(result.getTaskId())
+                .orElseThrow(() -> new RuntimeException("Updated task not found"));
     }
 
     public void deleteTask(Long id) {
-        taskRepository.deleteById(id);
+        sendTaskOperation(
+                TaskRabbitMqConfig.TASK_DELETE_ROUTING_KEY,
+                new DeleteTaskCommand(id)
+        );
     }
 
     // Zadania przypisane do użytkownika (wszystkie projekty)
@@ -188,10 +196,12 @@ public class TaskService {
     }
 
     public TaskWithAssigneeResponse setTaskStatusToReview(Long id) {
-        Task task = taskRepository.findById(id)
+        TaskOperationResult result = sendTaskOperation(
+                TaskRabbitMqConfig.TASK_REVIEW_ROUTING_KEY,
+                new SetTaskStatusCommand(id, TaskStatus.TO_REVIEW)
+        );
+        Task task = taskRepository.findById(result.getTaskId())
             .orElseThrow(() -> new EntityNotFoundException("Task not found"));
-        task.setStatus(TaskStatus.TO_REVIEW);
-        taskRepository.save(task);
         User assigned = task.getAssignedTo();
         return new TaskWithAssigneeResponse(
             task.getId(),
@@ -214,20 +224,19 @@ public class TaskService {
      * @return dodany komentarz
      */
     public TaskComment addCommentToTask(Long taskId, AddTaskCommentRequest request) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new RuntimeException("Task not found"));
-
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String email = authentication.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        TaskComment comment = new TaskComment();
-        comment.setTask(task);
-        comment.setUser(user);
-        comment.setComment(request.getComment());
+        TaskOperationResult result = sendTaskOperation(
+                TaskRabbitMqConfig.TASK_COMMENT_ROUTING_KEY,
+                new AddTaskCommentCommand(taskId, request.getComment(), email)
+        );
 
-        return taskCommentRepository.save(comment);
+        if (result.getCommentId() == null) {
+            throw new RuntimeException("Created comment id missing");
+        }
+        return taskCommentRepository.findById(result.getCommentId())
+                .orElseThrow(() -> new RuntimeException("Created comment not found"));
     }
 
     /**
@@ -267,5 +276,24 @@ public class TaskService {
                 task.getAssignedTo() != null ? task.getAssignedTo().getLastName() : null
             ))
             .toList();
+    }
+
+    private TaskOperationResult sendTaskOperation(String routingKey, Object command) {
+        TaskOperationResult result = rabbitTemplate.convertSendAndReceiveAsType(
+                TaskRabbitMqConfig.TASK_EXCHANGE,
+                routingKey,
+                command,
+                new ParameterizedTypeReference<TaskOperationResult>() {}
+        );
+
+        if (result == null) {
+            throw new RuntimeException("Task operation timed out");
+        }
+        if (!result.isSuccess()) {
+            throw new RuntimeException(result.getErrorMessage() != null
+                    ? result.getErrorMessage()
+                    : "Task operation failed");
+        }
+        return result;
     }
 }

@@ -23,6 +23,7 @@ import { Button } from "@/components/ui/button";
 const AdminPanel = () => {
   const [users, setUsers] = useState([]);
   const [nodes, setNodes] = useState([]);
+  const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nodesLoading, setNodesLoading] = useState(true);
   const { getToken } = useAuth();
@@ -32,7 +33,11 @@ const AdminPanel = () => {
   useEffect(() => {
     fetchUsers();
     fetchNodes();
-    const interval = setInterval(fetchNodes, 5000);
+    fetchNodeEvents();
+    const interval = setInterval(() => {
+      fetchNodes();
+      fetchNodeEvents();
+    }, 5000);
     return () => clearInterval(interval);
   }, []);
 
@@ -62,6 +67,17 @@ const AdminPanel = () => {
       toast.error("Nie udalo sie pobrac statusu wezlow");
     } finally {
       setNodesLoading(false);
+    }
+  };
+
+  const fetchNodeEvents = async () => {
+    try {
+      const response = await api.get("/admin/nodes/events", {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setEvents(response.data);
+    } catch (error) {
+      console.error("Error fetching node events:", error);
     }
   };
 
@@ -215,6 +231,44 @@ const AdminPanel = () => {
               </TableBody>
             </Table>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Historia zdarzen systemu rozproszonego</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Czas</TableHead>
+                <TableHead>Node</TableHead>
+                <TableHead>Zdarzenie</TableHead>
+                <TableHead>Szczegoly</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {events.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={4}>Brak zdarzen</TableCell>
+                </TableRow>
+              ) : (
+                events.map((event) => (
+                  <TableRow key={event.id}>
+                    <TableCell>
+                      {event.eventTime
+                        ? new Date(event.eventTime).toLocaleString()
+                        : "brak"}
+                    </TableCell>
+                    <TableCell>{event.nodeId}</TableCell>
+                    <TableCell>{event.eventType}</TableCell>
+                    <TableCell>{event.details}</TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
         </CardContent>
       </Card>
 

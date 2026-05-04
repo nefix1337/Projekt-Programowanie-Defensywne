@@ -13,6 +13,10 @@ import pl.projekt.backend.config.TaskRabbitMqConfig;
 import pl.projekt.backend.dto.*;
 import pl.projekt.backend.messaging.CreateTaskCommand;
 import pl.projekt.backend.messaging.CreateTaskResult;
+import pl.projekt.backend.messaging.DeleteTaskCommand;
+import pl.projekt.backend.messaging.SetTaskStatusCommand;
+import pl.projekt.backend.messaging.TaskOperationResult;
+import pl.projekt.backend.messaging.UpdateTaskCommand;
 import pl.projekt.backend.model.*;
 import pl.projekt.backend.repository.*;
 
@@ -131,9 +135,16 @@ class TaskServiceTest {
         req.setDueDate(LocalDateTime.now().plusDays(2));
         req.setAssignedToId(assignedTo.getId());
 
+        when(rabbitTemplate.convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_UPDATE_ROUTING_KEY),
+                any(UpdateTaskCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<TaskOperationResult>>any()
+        )).thenReturn(new TaskOperationResult(true, task.getId(), null, null));
+        task.setTitle("Nowy tytuł");
+        task.setStatus(TaskStatus.IN_PROGRESS);
+        task.setPriority(TaskPriority.LOW);
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(userRepository.findById(assignedTo.getId())).thenReturn(Optional.of(assignedTo));
-        when(taskRepository.save(any(Task.class))).thenReturn(task);
 
         Task result = taskService.updateTask(task.getId(), req);
 
@@ -141,7 +152,13 @@ class TaskServiceTest {
         assertEquals("Nowy tytuł", result.getTitle());
         assertEquals(TaskStatus.IN_PROGRESS, result.getStatus());
         assertEquals(TaskPriority.LOW, result.getPriority());
-        verify(taskRepository).save(any(Task.class));
+        verify(rabbitTemplate).convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_UPDATE_ROUTING_KEY),
+                any(UpdateTaskCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<TaskOperationResult>>any()
+        );
+        verify(taskRepository, never()).save(any(Task.class));
     }
 
     /**
@@ -150,8 +167,21 @@ class TaskServiceTest {
     @Test
     @DisplayName("Usuwanie zadania")
     void deleteTask_ShouldDeleteTask() {
+        when(rabbitTemplate.convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_DELETE_ROUTING_KEY),
+                any(DeleteTaskCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<TaskOperationResult>>any()
+        )).thenReturn(new TaskOperationResult(true, task.getId(), null, null));
+
         taskService.deleteTask(task.getId());
-        verify(taskRepository).deleteById(task.getId());
+        verify(rabbitTemplate).convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_DELETE_ROUTING_KEY),
+                any(DeleteTaskCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<TaskOperationResult>>any()
+        );
+        verify(taskRepository, never()).deleteById(task.getId());
     }
 
     /**
@@ -241,13 +271,25 @@ class TaskServiceTest {
     @Test
     @DisplayName("Zmiana statusu zadania na TO_REVIEW")
     void setTaskStatusToReview_ShouldUpdateStatus() {
+        when(rabbitTemplate.convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_REVIEW_ROUTING_KEY),
+                any(SetTaskStatusCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<TaskOperationResult>>any()
+        )).thenReturn(new TaskOperationResult(true, task.getId(), null, null));
+        task.setStatus(TaskStatus.TO_REVIEW);
         when(taskRepository.findById(task.getId())).thenReturn(Optional.of(task));
-        when(taskRepository.save(any(Task.class))).thenReturn(task);
 
         TaskWithAssigneeResponse response = taskService.setTaskStatusToReview(task.getId());
 
         assertNotNull(response);
         assertEquals("TO_REVIEW", response.getStatus());
-        verify(taskRepository).save(any(Task.class));
+        verify(rabbitTemplate).convertSendAndReceiveAsType(
+                eq(TaskRabbitMqConfig.TASK_EXCHANGE),
+                eq(TaskRabbitMqConfig.TASK_REVIEW_ROUTING_KEY),
+                any(SetTaskStatusCommand.class),
+                ArgumentMatchers.<ParameterizedTypeReference<TaskOperationResult>>any()
+        );
+        verify(taskRepository, never()).save(any(Task.class));
     }
 }

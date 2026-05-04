@@ -85,6 +85,7 @@ class AuthServiceTest {
         request.setPassword("haslo123");
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(request.getPassword(), user.getPassword())).thenReturn(true);
         when(jwtService.generateToken(user)).thenReturn("mocked-token");
 
         AuthResponse response = authService.login(request);
@@ -106,6 +107,7 @@ class AuthServiceTest {
         request.setPassword("haslo123");
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(request.getPassword(), user.getPassword())).thenReturn(true);
 
         AuthResponse response = authService.login(request);
 
@@ -127,6 +129,7 @@ class AuthServiceTest {
         request.setTotpCode("000000");
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
+        when(passwordEncoder.matches(request.getPassword(), user.getPassword())).thenReturn(true);
         when(totpService.verifyCode("000000", null)).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> authService.login(request));

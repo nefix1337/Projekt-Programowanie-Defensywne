@@ -123,14 +123,22 @@ public class LeaderElectionService {
     }
 
     private void startTaskListener() {
-        MessageListenerContainer container = listenerRegistry.getListenerContainer(TaskRabbitMqConfig.TASK_CREATE_LISTENER_ID);
+        TaskRabbitMqConfig.WRITE_LISTENER_IDS.forEach(this::startListener);
+    }
+
+    private void stopTaskListener() {
+        TaskRabbitMqConfig.WRITE_LISTENER_IDS.forEach(this::stopListener);
+    }
+
+    private void startListener(String listenerId) {
+        MessageListenerContainer container = listenerRegistry.getListenerContainer(listenerId);
         if (container != null && !container.isRunning()) {
             container.start();
         }
     }
 
-    private void stopTaskListener() {
-        MessageListenerContainer container = listenerRegistry.getListenerContainer(TaskRabbitMqConfig.TASK_CREATE_LISTENER_ID);
+    private void stopListener(String listenerId) {
+        MessageListenerContainer container = listenerRegistry.getListenerContainer(listenerId);
         if (container != null && container.isRunning()) {
             container.stop();
         }
