@@ -33,6 +33,7 @@ class AuthServiceTest {
     @Mock private JwtService jwtService;
     @Mock private AuthenticationManager authenticationManager;
     @Mock private TotpService totpService;
+    @Mock private SensitiveDataService sensitiveDataService;
 
     @InjectMocks private AuthService authService;
 
@@ -131,6 +132,7 @@ class AuthServiceTest {
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(user));
         when(passwordEncoder.matches(request.getPassword(), user.getPassword())).thenReturn(true);
         when(totpService.verifyCode("000000", null)).thenReturn(false);
+        when(sensitiveDataService.decrypt(null)).thenReturn(null);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> authService.login(request));
         assertEquals("Invalid 2FA code", ex.getMessage());
@@ -149,6 +151,7 @@ class AuthServiceTest {
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
         when(totpService.generateSecret()).thenReturn("sekret2fa");
+        when(sensitiveDataService.encrypt("sekret2fa")).thenReturn("encrypted-sekret2fa");
         when(userRepository.save(user)).thenReturn(user);
         when(totpService.getQRCodeImageUri("sekret2fa", user.getEmail())).thenReturn("qrCodeImage");
 
@@ -172,6 +175,7 @@ class AuthServiceTest {
         user.setTwoFactorSecret("sekret2fa");
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(sensitiveDataService.decrypt("sekret2fa")).thenReturn("sekret2fa");
         when(totpService.verifyCode("123456", "sekret2fa")).thenReturn(true);
         when(userRepository.save(user)).thenReturn(user);
         when(jwtService.generateToken(user)).thenReturn("mocked-token");
@@ -197,6 +201,7 @@ class AuthServiceTest {
         user.setTwoFactorSecret("sekret2fa");
 
         when(userRepository.findByEmail(user.getEmail())).thenReturn(Optional.of(user));
+        when(sensitiveDataService.decrypt("sekret2fa")).thenReturn("sekret2fa");
         when(totpService.verifyCode("000000", "sekret2fa")).thenReturn(false);
 
         RuntimeException ex = assertThrows(RuntimeException.class, () -> authService.verify2FA(request));

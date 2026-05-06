@@ -25,6 +25,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
     private final TotpService totpService;
+    private final SensitiveDataService sensitiveDataService;
 
     public AuthResponse register(RegisterRequest request) {
         User user = new User();
@@ -61,7 +62,7 @@ public class AuthService {
                         .build();
             }
 
-            if (!totpService.verifyCode(request.getTotpCode(), user.getTwoFactorSecret())) {
+            if (!totpService.verifyCode(request.getTotpCode(), sensitiveDataService.decrypt(user.getTwoFactorSecret()))) {
                 throw new RuntimeException("Invalid 2FA code");
             }
         }
@@ -76,7 +77,7 @@ public class AuthService {
     public AuthResponse enable2FA() {
         User user = getCurrentUser();
         String secret = totpService.generateSecret();
-        user.setTwoFactorSecret(secret);
+        user.setTwoFactorSecret(sensitiveDataService.encrypt(secret));
         user.setTwoFactorEnabled(true);
         userRepository.save(user);
 
@@ -90,7 +91,7 @@ public class AuthService {
     public AuthResponse verify2FA(TotpRequest request) {
         User user  = userRepository.findByEmail(request.getEmail())
         .orElseThrow(() -> new RuntimeException("User not found"));
-        if (totpService.verifyCode(request.getTotpCode(), user.getTwoFactorSecret())) {
+        if (totpService.verifyCode(request.getTotpCode(), sensitiveDataService.decrypt(user.getTwoFactorSecret()))) {
             user.setTwoFactorEnabled(true);
             userRepository.save(user);
 

@@ -17,6 +17,7 @@ Aplikacja webowa do zarządzania projektami i zadaniami z wbudowaną autentykacj
 w folderze projektu ```..\Projekt-Programowanie-Defensywne>``` wpisujemy:
 
 ```bash
+cp .env.example .env
 docker-compose up -d
 ```
 
@@ -129,21 +130,15 @@ Przy każdym starcie backendu jest automatycznie tworzone konto administratora:
 
 ## Zmienne środowiskowe
 
-### Backend
-Skopiuj `.env.example` do `.env` i dostosuj:
+Przed uruchomieniem Dockera skopiuj `.env.example` do `.env` i ustaw wlasne wartosci sekretow:
 
-```bash
-cp backend/.env.example backend/.env
-```
+- `JWT_SECRET` - sekret do podpisywania tokenow JWT, minimum 32 losowe znaki
+- `TOTP_ENCRYPTION_SECRET` - sekret do szyfrowania sekretow TOTP w bazie, minimum 32 losowe znaki
+- `APP_CORS_ALLOWED_ORIGINS` - dozwolone originy frontendu oddzielone przecinkami
 
-### Frontend
-Skopiuj `.env.example` do `.env` i dostosuj:
+Plik `.env` jest ignorowany przez Git. Nie commituj prawdziwych sekretow.
 
-```bash
-cp frontend/.env.example frontend/.env
-```
-
-
+CSRF jest wylaczony dla API, poniewaz aplikacja jest bezstanowa i uzywa tokenu JWT przekazywanego w naglowku `Authorization`, a nie ciasteczek sesyjnych. CORS jest ograniczony do originow z `APP_CORS_ALLOWED_ORIGINS`.
 
 ## Zmiana portów
 

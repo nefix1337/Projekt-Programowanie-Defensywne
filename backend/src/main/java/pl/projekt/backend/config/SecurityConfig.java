@@ -1,11 +1,11 @@
 package pl.projekt.backend.config;
 
-import org.springframework.http.HttpMethod;
-import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import pl.projekt.backend.security.JwtAuthenticationFilter;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
@@ -13,7 +13,9 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import pl.projekt.backend.security.JwtAuthenticationFilter;
 
+import java.util.Arrays;
 import java.util.List;
 
 import static org.springframework.security.config.Customizer.withDefaults;
@@ -25,6 +27,9 @@ public class SecurityConfig {
     private final JwtAuthenticationFilter jwtAuthFilter;
     private final AuthenticationProvider authenticationProvider;
 
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://frontend:3000}")
+    private String allowedOrigins;
+
     public SecurityConfig(JwtAuthenticationFilter jwtAuthFilter, AuthenticationProvider authenticationProvider) {
         this.jwtAuthFilter = jwtAuthFilter;
         this.authenticationProvider = authenticationProvider;
@@ -35,12 +40,16 @@ public class SecurityConfig {
         http
                 .cors(withDefaults())
                 .csrf(csrf -> csrf.disable())
-                .headers(headers -> headers.frameOptions(frameOption -> frameOption.sameOrigin()))
+                .headers(headers -> headers
+                        .frameOptions(frameOption -> frameOption.deny())
+                        .contentSecurityPolicy(policy -> policy.policyDirectives(
+                                "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; frame-ancestors 'none'"
+                        ))
+                )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                         .requestMatchers(
                                 "/api/auth/**",
-                                "/h2-console/**",
                                 "/v3/api-docs/**",
                                 "/swagger-ui-custom.html",
                                 "/swagger-ui.html",
@@ -54,7 +63,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.PUT, "/api/projects/**").hasRole("MANAGER")
                         .requestMatchers(HttpMethod.DELETE, "/api/projects/**").hasRole("MANAGER")
                         .requestMatchers(HttpMethod.POST, "/api/tasks").hasAnyRole("MANAGER", "ADMIN")
-                        .requestMatchers(HttpMethod.PATCH, "/api/tasks/*/to-review").permitAll()
+                        .requestMatchers(HttpMethod.PATCH, "/api/tasks/*/to-review").authenticated()
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -67,16 +76,14 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();
-        // Obsługuj zarówno rozwój lokalny jak i Docker
-        configuration.setAllowedOrigins(List.of(
-                "http://localhost:3000",      // Docker Frontend
-                "http://localhost:5173",      // Vite Dev Server
-                "http://localhost:8080",      // Local Backend
-                "http://frontend:3000"        // Docker network hostname
-        ));
+        configuration.setAllowedOrigins(Arrays.stream(allowedOrigins.split(","))
+                .map(String::trim)
+                .filter(origin -> !origin.isBlank())
+                .toList());
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("*"));
-        configuration.setAllowCredentials(true);
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept"));
+        configuration.setExposedHeaders(List.of("Authorization"));
+        configuration.setAllowCredentials(false);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);

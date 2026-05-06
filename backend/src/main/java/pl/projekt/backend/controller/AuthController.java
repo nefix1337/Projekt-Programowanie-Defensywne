@@ -70,7 +70,7 @@ public class AuthController {
      */
     @Operation(summary = "Weryfikacja 2FA")
     @PostMapping("/2fa/verify")
-    public ResponseEntity<AuthResponse> verify2FA(@RequestBody TotpRequest request) {
+    public ResponseEntity<AuthResponse> verify2FA(@Valid @RequestBody TotpRequest request) {
         return ResponseEntity.ok(authService.verify2FA(request));
     }
 }

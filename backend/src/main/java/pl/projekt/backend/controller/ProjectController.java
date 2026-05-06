@@ -7,6 +7,7 @@ import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import pl.projekt.backend.dto.CreateProjectRequest;
 import pl.projekt.backend.dto.ProjectMemberResponse;
 import pl.projekt.backend.dto.AddProjectMemberRequest;
@@ -63,7 +64,7 @@ public class ProjectController {
     @Operation(summary = "Tworzenie nowego projektu")
     @PostMapping
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Project> createProject(@RequestBody CreateProjectRequest request) {
+    public ResponseEntity<Project> createProject(@Valid @RequestBody CreateProjectRequest request) {
         return ResponseEntity.ok(projectService.createProject(request));
     }
 
@@ -78,7 +79,7 @@ public class ProjectController {
     @Operation(summary = "Aktualizacja projektu")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Project> updateProject(@PathVariable UUID id, @RequestBody Project project) {
+    public ResponseEntity<Project> updateProject(@PathVariable UUID id, @Valid @RequestBody Project project) {
         return ResponseEntity.ok(projectService.updateProject(id, project));
     }
 
@@ -110,7 +111,7 @@ public class ProjectController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<ProjectMemberResponse> addProjectMember(
             @PathVariable UUID projectId,
-            @RequestBody AddProjectMemberRequest request) {
+            @Valid @RequestBody AddProjectMemberRequest request) {
         return ResponseEntity.ok(projectService.addProjectMember(projectId, request));
     }
 

@@ -17,6 +17,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.access.prepost.PreAuthorize;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.UUID;
@@ -41,7 +42,7 @@ public class TaskController {
      */
     @Operation(summary = "Tworzenie nowego zadania")
     @PostMapping
-    public ResponseEntity<Task> createTask(@RequestBody CreateTaskRequest request) {
+    public ResponseEntity<Task> createTask(@Valid @RequestBody CreateTaskRequest request) {
         return ResponseEntity.ok(taskService.createTask(request));
     }
 
@@ -54,7 +55,7 @@ public class TaskController {
      */
     @Operation(summary = "Aktualizacja zadania")
     @PutMapping("/{id}")
-    public ResponseEntity<Task> updateTask(@PathVariable Long id, @RequestBody UpdateTaskRequest request) {
+    public ResponseEntity<Task> updateTask(@PathVariable Long id, @Valid @RequestBody UpdateTaskRequest request) {
         return ResponseEntity.ok(taskService.updateTask(id, request));
     }
 
@@ -156,7 +157,7 @@ public class TaskController {
     @PostMapping("/{taskId}/comments")
     public ResponseEntity<TaskComment> addCommentToTask(
             @PathVariable Long taskId,
-            @RequestBody AddTaskCommentRequest request) {
+            @Valid @RequestBody AddTaskCommentRequest request) {
         return ResponseEntity.ok(taskService.addCommentToTask(taskId, request));
     }
 

@@ -5,6 +5,8 @@ import org.hibernate.annotations.UpdateTimestamp;
 
 import java.util.UUID;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
@@ -27,8 +29,11 @@ public class Project {
     private UUID id;
 
     @Column(nullable = false)
+    @NotBlank
+    @Size(max = 120)
     private String name;
 
+    @Size(max = 2000)
     private String description;
 
     @CreationTimestamp
@@ -53,6 +58,7 @@ public class Project {
     private List<Task> tasks;
 
     @Column(name = "icon", length = 8)
+    @Size(max = 8)
     private String icon;
 
 

@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 
 import java.util.List;
 
@@ -39,7 +40,7 @@ public class AdminController {
     @Operation(summary = "Zmiania roli użytkownika")
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/change-role")
-    public ResponseEntity<String> changeUserRole(@RequestBody ChangeRoleRequest request) {
+    public ResponseEntity<String> changeUserRole(@Valid @RequestBody ChangeRoleRequest request) {
         adminService.changeUserRole(request);
         return ResponseEntity.ok("User role updated successfully");
     }
