@@ -36,9 +36,10 @@ export const AuthProvider = ({ children }) => {
       return { requires2FA: true };
     }
 
-    console.log(parseJwt(res.data.token).role)
+    const parsedUser = parseJwt(res.data.token);
     setAccessToken(res.data.token);
-    return { requires2FA: false, role: parseJwt(res.data.token).role };
+    setUser(parsedUser);
+    return { requires2FA: false, role: parsedUser.role };
   };
 
   const register = async (firstName, lastName, email, password) => {
@@ -62,7 +63,9 @@ export const AuthProvider = ({ children }) => {
         totpCode,
         email,
       });
+      const parsedUser = parseJwt(res.data.token);
       setAccessToken(res.data.token);
+      setUser(parsedUser);
     } catch (error) {
       console.error('Error during 2FA verification:', error);
       throw new Error('2FA verification failed. Please try again.');

@@ -76,8 +76,7 @@ const AddTask = () => {
       return;
     }
 
-    
-    let dueDateFormatted = form.dueDate ? form.dueDate.replace("T", "T").slice(0, 19) : null;
+    const dueDateFormatted = form.dueDate ? form.dueDate.slice(0, 16) : null;
 
     try {
       await api.post(
