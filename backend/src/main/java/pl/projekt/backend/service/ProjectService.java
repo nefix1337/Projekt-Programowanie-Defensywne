@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
 import pl.projekt.backend.dto.CreateProjectRequest;
+import pl.projekt.backend.dto.UpdateProjectRequest;
 import pl.projekt.backend.dto.ProjectMemberResponse;
 import pl.projekt.backend.dto.AddProjectMemberRequest;
 import pl.projekt.backend.model.Project;
@@ -57,12 +58,13 @@ public class ProjectService {
     return projectRepository.save(project);
 }
 
-    public Project updateProject(UUID id, Project updatedProject) {
+    public Project updateProject(UUID id, UpdateProjectRequest request) {
         return projectRepository.findById(id)
                 .map(existingProject -> {
-                    existingProject.setName(updatedProject.getName());
-                    existingProject.setDescription(updatedProject.getDescription());
-                    existingProject.setStatus(updatedProject.getStatus());
+                    existingProject.setName(request.getName());
+                    existingProject.setDescription(request.getDescription());
+                    existingProject.setStatus(ProjectStatus.valueOf(request.getStatus().toUpperCase()));
+                    existingProject.setIcon(request.getIcon());
                     return projectRepository.save(existingProject);
                 })
                 .orElseThrow(() -> new RuntimeException("Project not found"));

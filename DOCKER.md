@@ -34,7 +34,7 @@ docker-compose ps
 
 ### 3. Dostęp do aplikacji
 
-- **Frontend**: http://localhost:3000
+- **Frontend**: http://localhost:3000/login
 - **Backend API**: http://localhost:8080
 - **Swagger UI**: http://localhost:8080/swagger-ui-custom.html
 - **PostgreSQL**: localhost:5432

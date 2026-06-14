@@ -24,8 +24,9 @@ import api from "@/api/axiosInstance";
 const projectStatuses = [
   { value: "NEW", label: "Nowy" },
   { value: "IN_PROGRESS", label: "W trakcie" },
-  { value: "COMPLETED", label: "Zakończony" },
-  { value: "ON_HOLD", label: "Wstrzymany" }
+  { value: "ON_HOLD", label: "Wstrzymany" },
+  { value: "DONE", label: "Zrobiony" },
+  { value: "COMPLETED", label: "Zakończony" }
 ];
 
 const NewProject = () => {
@@ -61,8 +62,31 @@ const NewProject = () => {
     }));
   };
 
+  const validateForm = () => {
+    if (!formData.name.trim()) {
+      toast.error("Nazwa projektu jest wymagana");
+      return false;
+    }
+    if (formData.name.length > 120) {
+      toast.error("Nazwa projektu może mieć maksymalnie 120 znaków");
+      return false;
+    }
+    if (formData.description.length > 2000) {
+      toast.error("Opis projektu może mieć maksymalnie 2000 znaków");
+      return false;
+    }
+    if (formData.icon.length > 8) {
+      toast.error("Wybrana ikona jest nieprawidłowa, wybierz inną");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
     setLoading(true);
 
     try {
@@ -103,6 +127,7 @@ const NewProject = () => {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Wprowadź nazwę projektu"
+                  maxLength={120}
                   required
                 />
               </div>
@@ -137,6 +162,7 @@ const NewProject = () => {
                 value={formData.description}
                 onChange={handleChange}
                 placeholder="Wprowadź opis projektu"
+                maxLength={2000}
               />
             </div>
 

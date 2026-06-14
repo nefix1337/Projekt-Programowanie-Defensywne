@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import pl.projekt.backend.dto.AddProjectMemberRequest;
 import pl.projekt.backend.dto.CreateProjectRequest;
+import pl.projekt.backend.dto.UpdateProjectRequest;
 import pl.projekt.backend.dto.ProjectMemberResponse;
 import pl.projekt.backend.model.*;
 import pl.projekt.backend.repository.ProjectMemberRepository;
@@ -112,19 +113,22 @@ public class ProjectServiceTest {
     @Test
     @DisplayName("Aktualizacja projektu")
     void updateProject_ShouldUpdateProject() {
-        Project updated = new Project();
-        updated.setName("Zmieniony");
-        updated.setDescription("Nowy opis");
-        updated.setStatus(ProjectStatus.DONE);
+        UpdateProjectRequest request = new UpdateProjectRequest();
+        request.setName("Zmieniony");
+        request.setDescription("Nowy opis");
+        request.setStatus("DONE");
+        request.setIcon("🚀");
 
         when(projectRepository.findById(project.getId())).thenReturn(Optional.of(project));
-        when(projectRepository.save(any(Project.class))).thenReturn(updated);
+        when(projectRepository.save(any(Project.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
-        Project result = projectService.updateProject(project.getId(), updated);
+        Project result = projectService.updateProject(project.getId(), request);
 
         assertNotNull(result);
         assertEquals("Zmieniony", result.getName());
+        assertEquals("Nowy opis", result.getDescription());
         assertEquals(ProjectStatus.DONE, result.getStatus());
+        assertEquals("🚀", result.getIcon());
     }
 
     /**

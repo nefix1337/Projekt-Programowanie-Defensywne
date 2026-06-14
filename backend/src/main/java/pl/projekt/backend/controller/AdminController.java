@@ -1,8 +1,10 @@
 package pl.projekt.backend.controller;
 
 import pl.projekt.backend.dto.ChangeRoleRequest;
+import pl.projekt.backend.dto.EventTypeCountResponse;
 import pl.projekt.backend.dto.NodeEventResponse;
 import pl.projekt.backend.dto.NodeStatusResponse;
+import pl.projekt.backend.dto.SetNetworkDelayRequest;
 import pl.projekt.backend.dto.UserResponse;
 import pl.projekt.backend.service.AdminService;
 import pl.projekt.backend.service.NodeMonitoringService;
@@ -87,6 +89,37 @@ public class AdminController {
         nodeMonitoringService.recover(nodeId);
         return ResponseEntity.noContent().build();
     }
-    
+
+    @Operation(summary = "Ustawienie opoznienia sieciowego wezla")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/nodes/{nodeId}/network-delay")
+    public ResponseEntity<Void> setNetworkDelay(@PathVariable String nodeId, @Valid @RequestBody SetNetworkDelayRequest request) {
+        nodeMonitoringService.setNetworkDelay(nodeId, request.getDelayMs());
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Wlaczenie symulacji uszkodzenia wiadomosci")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/nodes/{nodeId}/message-corruption")
+    public ResponseEntity<Void> enableMessageCorruption(@PathVariable String nodeId) {
+        nodeMonitoringService.setMessageCorruption(nodeId, true);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Wylaczenie symulacji uszkodzenia wiadomosci")
+    @PreAuthorize("hasRole('ADMIN')")
+    @PostMapping("/nodes/{nodeId}/message-corruption/clear")
+    public ResponseEntity<Void> disableMessageCorruption(@PathVariable String nodeId) {
+        nodeMonitoringService.setMessageCorruption(nodeId, false);
+        return ResponseEntity.noContent().build();
+    }
+
+    @Operation(summary = "Metryki zdarzen systemu rozproszonego")
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/nodes/metrics")
+    public ResponseEntity<List<EventTypeCountResponse>> getEventMetrics() {
+        return ResponseEntity.ok(nodeMonitoringService.getEventTypeCounts());
+    }
+
 }
 

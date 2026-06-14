@@ -25,9 +25,11 @@ public class TaskCreationService {
     private final UserRepository userRepository;
     private final TaskCommentRepository taskCommentRepository;
     private final DistributedEventService distributedEventService;
+    private final FaultInjectionService faultInjectionService;
 
     @Transactional
     public Task createTask(CreateTaskCommand command) {
+        faultInjectionService.applyFaults("CREATE_TASK");
         Project project = projectRepository.findById(command.getProjectId())
                 .orElseThrow(() -> new EntityNotFoundException("Project not found"));
         User createdBy = userRepository.findByEmail(command.getCreatedByEmail())
@@ -52,6 +54,7 @@ public class TaskCreationService {
 
     @Transactional
     public Task updateTask(UpdateTaskCommand command) {
+        faultInjectionService.applyFaults("UPDATE_TASK");
         Task task = taskRepository.findById(command.getTaskId())
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
 
@@ -83,6 +86,7 @@ public class TaskCreationService {
 
     @Transactional
     public void deleteTask(Long taskId) {
+        faultInjectionService.applyFaults("DELETE_TASK");
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
         taskCommentRepository.deleteByTask(task);
@@ -92,6 +96,7 @@ public class TaskCreationService {
 
     @Transactional
     public Task setTaskStatus(SetTaskStatusCommand command) {
+        faultInjectionService.applyFaults("SET_TASK_STATUS");
         Task task = taskRepository.findById(command.getTaskId())
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
         task.setStatus(command.getStatus());
@@ -104,6 +109,7 @@ public class TaskCreationService {
 
     @Transactional
     public TaskComment addComment(AddTaskCommentCommand command) {
+        faultInjectionService.applyFaults("ADD_COMMENT");
         Task task = taskRepository.findById(command.getTaskId())
                 .orElseThrow(() -> new EntityNotFoundException("Task not found"));
         User user = userRepository.findByEmail(command.getAuthorEmail())

@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import pl.projekt.backend.dto.EventTypeCountResponse;
 import pl.projekt.backend.dto.NodeEventResponse;
 import pl.projekt.backend.dto.NodeStatusResponse;
 
@@ -48,6 +49,8 @@ public class NodeMonitoringService {
                     CandidateRow row = rows.get(entry.getKey());
                     int weight = row != null ? row.weight() : entry.getValue();
                     boolean forcedDown = row != null && row.forcedDown();
+                    int networkDelayMs = row != null ? row.networkDelayMs() : 0;
+                    boolean messageCorruption = row != null && row.messageCorruption();
                     LocalDateTime lastSeen = row != null ? row.lastSeen() : null;
                     boolean online = lastSeen != null && !lastSeen.isBefore(aliveSince) && !forcedDown;
                     Long secondsSinceLastSeen = lastSeen != null ? Duration.between(lastSeen, now).getSeconds() : null;
@@ -58,6 +61,8 @@ public class NodeMonitoringService {
                             online,
                             leader,
                             forcedDown,
+                            networkDelayMs,
+                            messageCorruption,
                             lastSeen,
                             secondsSinceLastSeen
                     );
@@ -73,6 +78,47 @@ public class NodeMonitoringService {
     public void recover(String nodeId) {
         setForcedDown(nodeId, false);
         recordEvent("backend", "NODE_RECOVERED", "nodeId=" + nodeId);
+    }
+
+    public void setNetworkDelay(String nodeId, int delayMs) {
+        ensureTable();
+        int weight = parseExpectedNodes().getOrDefault(nodeId, 0);
+        jdbcTemplate.update("""
+                INSERT INTO node_leader_candidates (node_id, node_weight, last_seen, network_delay_ms)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (node_id)
+                DO UPDATE SET network_delay_ms = EXCLUDED.network_delay_ms
+                """, nodeId, weight, Timestamp.valueOf(LocalDateTime.now().minusSeconds(ttlSeconds + 1)), delayMs);
+        if (delayMs > 0) {
+            recordEvent("backend", "NETWORK_DELAY_INJECTED", "nodeId=" + nodeId + ",delayMs=" + delayMs);
+        } else {
+            recordEvent("backend", "NETWORK_DELAY_CLEARED", "nodeId=" + nodeId);
+        }
+    }
+
+    public void setMessageCorruption(String nodeId, boolean enabled) {
+        ensureTable();
+        int weight = parseExpectedNodes().getOrDefault(nodeId, 0);
+        jdbcTemplate.update("""
+                INSERT INTO node_leader_candidates (node_id, node_weight, last_seen, message_corruption)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT (node_id)
+                DO UPDATE SET message_corruption = EXCLUDED.message_corruption
+                """, nodeId, weight, Timestamp.valueOf(LocalDateTime.now().minusSeconds(ttlSeconds + 1)), enabled);
+        recordEvent("backend", enabled ? "MESSAGE_CORRUPTION_INJECTED" : "MESSAGE_CORRUPTION_CLEARED", "nodeId=" + nodeId);
+    }
+
+    public List<EventTypeCountResponse> getEventTypeCounts() {
+        ensureEventTable();
+        return jdbcTemplate.query("""
+                SELECT event_type, COUNT(*) AS event_count
+                FROM distributed_node_events
+                GROUP BY event_type
+                ORDER BY event_count DESC, event_type ASC
+                """, (resultSet, rowNum) -> new EventTypeCountResponse(
+                        resultSet.getString("event_type"),
+                        resultSet.getLong("event_count")
+                ));
     }
 
     public List<NodeEventResponse> getEvents() {
@@ -104,7 +150,7 @@ public class NodeMonitoringService {
 
     private Map<String, CandidateRow> findRows() {
         return jdbcTemplate.query("""
-                SELECT node_id, node_weight, last_seen, forced_down
+                SELECT node_id, node_weight, last_seen, forced_down, network_delay_ms, message_corruption
                 FROM node_leader_candidates
                 """, resultSet -> {
             Map<String, CandidateRow> rows = new LinkedHashMap<>();
@@ -112,7 +158,9 @@ public class NodeMonitoringService {
                 rows.put(resultSet.getString("node_id"), new CandidateRow(
                         resultSet.getInt("node_weight"),
                         resultSet.getTimestamp("last_seen").toLocalDateTime(),
-                        resultSet.getBoolean("forced_down")
+                        resultSet.getBoolean("forced_down"),
+                        resultSet.getInt("network_delay_ms"),
+                        resultSet.getBoolean("message_corruption")
                 ));
             }
             return rows;
@@ -159,6 +207,14 @@ public class NodeMonitoringService {
                 ALTER TABLE node_leader_candidates
                 ADD COLUMN IF NOT EXISTS forced_down BOOLEAN NOT NULL DEFAULT FALSE
                 """);
+        jdbcTemplate.execute("""
+                ALTER TABLE node_leader_candidates
+                ADD COLUMN IF NOT EXISTS network_delay_ms INTEGER NOT NULL DEFAULT 0
+                """);
+        jdbcTemplate.execute("""
+                ALTER TABLE node_leader_candidates
+                ADD COLUMN IF NOT EXISTS message_corruption BOOLEAN NOT NULL DEFAULT FALSE
+                """);
         ensureEventTable();
     }
 
@@ -182,6 +238,7 @@ public class NodeMonitoringService {
                 """);
     }
 
-    private record CandidateRow(int weight, LocalDateTime lastSeen, boolean forcedDown) {
+    private record CandidateRow(int weight, LocalDateTime lastSeen, boolean forcedDown,
+                                  int networkDelayMs, boolean messageCorruption) {
     }
 }

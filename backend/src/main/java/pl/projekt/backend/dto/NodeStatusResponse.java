@@ -13,6 +13,8 @@ public class NodeStatusResponse {
     private boolean online;
     private boolean leader;
     private boolean forcedDown;
+    private int networkDelayMs;
+    private boolean messageCorruption;
     private LocalDateTime lastSeen;
     private Long secondsSinceLastSeen;
 }

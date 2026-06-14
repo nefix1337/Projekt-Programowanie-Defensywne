@@ -5,6 +5,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
@@ -22,6 +24,11 @@ public class DistributedEventService {
         ensureTable();
     }
 
+    /**
+     * Zapisuje zdarzenie w niezaleznej transakcji, aby wpis zostal zachowany
+     * nawet jesli wywolujaca operacja (np. wstrzykniecie awarii) wycofa swoja transakcje.
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(String eventType, String details) {
         ensureTable();
         jdbcTemplate.update("""

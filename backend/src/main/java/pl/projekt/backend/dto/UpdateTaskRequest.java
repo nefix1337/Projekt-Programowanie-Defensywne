@@ -1,6 +1,7 @@
 package pl.projekt.backend.dto;
 
 import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 import lombok.Data;
 import pl.projekt.backend.model.TaskPriority;
@@ -20,5 +21,7 @@ public class UpdateTaskRequest {
 
     @FutureOrPresent
     private LocalDateTime dueDate;
+
+    @Positive
     private Long assignedToId;
 }

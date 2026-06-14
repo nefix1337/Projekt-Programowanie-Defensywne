@@ -8,6 +8,7 @@ import org.mockito.*;
 import org.springframework.http.ResponseEntity;
 import pl.projekt.backend.dto.AddProjectMemberRequest;
 import pl.projekt.backend.dto.CreateProjectRequest;
+import pl.projekt.backend.dto.UpdateProjectRequest;
 import pl.projekt.backend.dto.ProjectMemberResponse;
 import pl.projekt.backend.model.Project;
 import pl.projekt.backend.service.ProjectService;
@@ -124,14 +125,18 @@ class ProjectControllerTest {
     @Test
     @DisplayName("Aktualizacja projektu")
     void updateProject_ShouldReturnUpdatedProject() {
-        when(projectService.updateProject(projectId, project)).thenReturn(project);
+        UpdateProjectRequest request = new UpdateProjectRequest();
+        request.setName("Zmieniony projekt");
+        request.setStatus("DONE");
 
-        ResponseEntity<Project> response = projectController.updateProject(projectId, project);
+        when(projectService.updateProject(projectId, request)).thenReturn(project);
+
+        ResponseEntity<Project> response = projectController.updateProject(projectId, request);
 
         assertNotNull(response);
         assertEquals(200, response.getStatusCodeValue());
         assertEquals(project, response.getBody());
-        verify(projectService).updateProject(projectId, project);
+        verify(projectService).updateProject(projectId, request);
     }
 
     /**

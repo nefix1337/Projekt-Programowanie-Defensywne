@@ -2,11 +2,14 @@ package pl.projekt.backend.exception;
 
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.server.ResponseStatusException;
@@ -16,6 +19,7 @@ import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -33,6 +37,21 @@ public class GlobalExceptionHandler {
                 request,
                 validationErrors
         );
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponse> handleMalformedRequest(
+            HttpMessageNotReadableException exception,
+            HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Malformed JSON request body", request, null);
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(
+            MethodArgumentTypeMismatchException exception,
+            HttpServletRequest request) {
+        String message = "Invalid value for parameter '" + exception.getName() + "'";
+        return buildResponse(HttpStatus.BAD_REQUEST, message, request, null);
     }
 
     @ExceptionHandler({EntityNotFoundException.class, UsernameNotFoundException.class})
@@ -61,6 +80,12 @@ public class GlobalExceptionHandler {
         HttpStatus status;
         if (isDistributedSystemUnavailable(exception.getMessage())) {
             status = HttpStatus.SERVICE_UNAVAILABLE;
+            log.warn("Distributed system unavailable on {} {}: {}",
+                    request.getMethod(), request.getRequestURI(), exception.getMessage());
+        } else if (isSimulatedFault(exception.getMessage())) {
+            status = HttpStatus.INTERNAL_SERVER_ERROR;
+            log.error("Simulated fault triggered on {} {}: {}",
+                    request.getMethod(), request.getRequestURI(), exception.getMessage());
         } else {
             status = isClientError(exception.getMessage())
                     ? HttpStatus.BAD_REQUEST
@@ -71,6 +96,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception exception, HttpServletRequest request) {
+        log.error("Unexpected error on {} {}", request.getMethod(), request.getRequestURI(), exception);
         return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Unexpected server error", request, null);
     }
 
@@ -106,5 +132,12 @@ public class GlobalExceptionHandler {
         }
         String normalized = message.toLowerCase();
         return normalized.contains("timed out") || normalized.contains("rabbitmq");
+    }
+
+    private boolean isSimulatedFault(String message) {
+        if (message == null) {
+            return false;
+        }
+        return message.toLowerCase().contains("simulated");
     }
 }

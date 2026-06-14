@@ -11,12 +11,11 @@ import { useAuth } from "@/auth/AuthProvider";
 import EmojiPicker from "emoji-picker-react";
 
 const STATUS_OPTIONS = [
-  { value: "TODO", label: "Do zrobienia" },
+  { value: "NEW", label: "Nowy" },
   { value: "IN_PROGRESS", label: "W trakcie" },
-  { value: "DONE", label: "Zrobione" },
-  { value: "TO_REVIEW", label: "Do sprawdzenia" },
-  { value: "VERIFIED", label: "Zweryfikowane" },
-  { value: "ARCHIVED", label: "Zarchiwizowane" },
+  { value: "ON_HOLD", label: "Wstrzymany" },
+  { value: "DONE", label: "Zrobiony" },
+  { value: "COMPLETED", label: "Zakończony" },
 ];
 
 const EditProject = () => {
@@ -29,7 +28,7 @@ const EditProject = () => {
     name: "",
     description: "",
     icon: "",
-    status: "TODO",
+    status: "NEW",
   });
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
 
@@ -61,8 +60,31 @@ const EditProject = () => {
     }));
   };
 
+  const validateForm = () => {
+    if (!form.name.trim()) {
+      toast.error("Nazwa projektu jest wymagana");
+      return false;
+    }
+    if (form.name.length > 120) {
+      toast.error("Nazwa projektu może mieć maksymalnie 120 znaków");
+      return false;
+    }
+    if (form.description.length > 2000) {
+      toast.error("Opis projektu może mieć maksymalnie 2000 znaków");
+      return false;
+    }
+    if (form.icon.length > 8) {
+      toast.error("Wybrana ikona jest nieprawidłowa, wybierz inną");
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
     setSaving(true);
     try {
       await api.put(
@@ -103,6 +125,7 @@ const EditProject = () => {
                 name="name"
                 value={form.name}
                 onChange={handleChange}
+                maxLength={120}
                 required
               />
             </div>
@@ -112,6 +135,7 @@ const EditProject = () => {
                 name="description"
                 value={form.description}
                 onChange={handleChange}
+                maxLength={2000}
               />
             </div>
             <div>

@@ -53,6 +53,14 @@ public class LeaderElectionService {
                 ALTER TABLE node_leader_candidates
                 ADD COLUMN IF NOT EXISTS forced_down BOOLEAN NOT NULL DEFAULT FALSE
                 """);
+        jdbcTemplate.execute("""
+                ALTER TABLE node_leader_candidates
+                ADD COLUMN IF NOT EXISTS network_delay_ms INTEGER NOT NULL DEFAULT 0
+                """);
+        jdbcTemplate.execute("""
+                ALTER TABLE node_leader_candidates
+                ADD COLUMN IF NOT EXISTS message_corruption BOOLEAN NOT NULL DEFAULT FALSE
+                """);
         log.info("Node {} registered for leader election with weight {}", nodeId, nodeWeight);
     }
 

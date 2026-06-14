@@ -29,6 +29,12 @@ const PRIORITY_OPTIONS = [
   { value: "HIGH", label: "Wysoki" },
 ];
 
+const nowLocalDateTime = () => {
+  const now = new Date();
+  const offset = now.getTimezoneOffset() * 60000;
+  return new Date(now - offset).toISOString().slice(0, 16);
+};
+
 const EditTask = () => {
   const { id, taskId } = useParams();
   const navigate = useNavigate();
@@ -87,8 +93,36 @@ const EditTask = () => {
     }));
   };
 
+  const validateForm = () => {
+    if (!form.title.trim()) {
+      toast.error("Tytuł jest wymagany");
+      return false;
+    }
+    if (form.title.length > 120) {
+      toast.error("Tytuł może mieć maksymalnie 120 znaków");
+      return false;
+    }
+    if (form.description.length > 2000) {
+      toast.error("Opis może mieć maksymalnie 2000 znaków");
+      return false;
+    }
+    if (form.dueDate) {
+      const due = new Date(form.dueDate);
+      const now = new Date();
+      now.setSeconds(0, 0);
+      if (due < now) {
+        toast.error("Termin nie może być w przeszłości");
+        return false;
+      }
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!validateForm()) {
+      return;
+    }
     setSaving(true);
     try {
       await api.put(
@@ -127,6 +161,7 @@ const EditTask = () => {
                 name="title"
                 value={form.title}
                 onChange={handleChange}
+                maxLength={120}
                 required
               />
             </div>
@@ -137,6 +172,7 @@ const EditTask = () => {
                 value={form.description}
                 onChange={handleChange}
                 rows={3}
+                maxLength={2000}
               />
             </div>
             <div>
@@ -184,6 +220,7 @@ const EditTask = () => {
                 name="dueDate"
                 value={form.dueDate}
                 onChange={handleChange}
+                min={nowLocalDateTime()}
               />
             </div>
             <div className="flex gap-2 mt-4">

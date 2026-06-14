@@ -19,14 +19,18 @@ import {
 } from "@/components/ui/select";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 
 const AdminPanel = () => {
   const [users, setUsers] = useState([]);
   const [nodes, setNodes] = useState([]);
   const [events, setEvents] = useState([]);
+  const [metrics, setMetrics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [nodesLoading, setNodesLoading] = useState(true);
+  const [metricsLoading, setMetricsLoading] = useState(true);
+  const [delayInputs, setDelayInputs] = useState({});
   const { getToken } = useAuth();
 
   const roles = ["USER", "MANAGER"];
@@ -35,9 +39,11 @@ const AdminPanel = () => {
     fetchUsers();
     fetchNodes();
     fetchNodeEvents();
+    fetchMetrics();
     const interval = setInterval(() => {
       fetchNodes();
       fetchNodeEvents();
+      fetchMetrics();
     }, 5000);
     return () => clearInterval(interval);
   }, []);
@@ -79,6 +85,19 @@ const AdminPanel = () => {
       setEvents(response.data);
     } catch (error) {
       console.error("Error fetching node events:", error);
+    }
+  };
+
+  const fetchMetrics = async () => {
+    try {
+      const response = await api.get("/admin/nodes/metrics", {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      setMetrics(response.data);
+    } catch (error) {
+      console.error("Error fetching node metrics:", error);
+    } finally {
+      setMetricsLoading(false);
     }
   };
 
@@ -139,6 +158,57 @@ const AdminPanel = () => {
     }
   };
 
+  const handleSetNetworkDelay = async (nodeId, delayMs) => {
+    try {
+      await api.post(
+        `/admin/nodes/${nodeId}/network-delay`,
+        { delayMs },
+        { headers: { Authorization: `Bearer ${getToken()}` } }
+      );
+      toast.success(
+        delayMs > 0
+          ? `Opoznienie sieciowe ${delayMs} ms ustawione dla ${nodeId}`
+          : `Opoznienie sieciowe wyczyszczone dla ${nodeId}`
+      );
+      fetchNodes();
+    } catch (error) {
+      console.error("Error setting network delay:", error);
+      toast.error(
+        error.response?.data?.message || "Nie udalo sie ustawic opoznienia sieciowego"
+      );
+    }
+  };
+
+  const handleApplyNetworkDelay = (nodeId) => {
+    const rawValue = delayInputs[nodeId];
+    const delayMs = Number(rawValue);
+    if (rawValue === undefined || rawValue === "" || !Number.isFinite(delayMs) || delayMs < 0 || delayMs > 30000) {
+      toast.error("Opoznienie musi byc liczba od 0 do 30000 ms");
+      return;
+    }
+    handleSetNetworkDelay(nodeId, delayMs);
+  };
+
+  const handleToggleMessageCorruption = async (nodeId, enable) => {
+    try {
+      const path = enable
+        ? `/admin/nodes/${nodeId}/message-corruption`
+        : `/admin/nodes/${nodeId}/message-corruption/clear`;
+      await api.post(path, null, {
+        headers: { Authorization: `Bearer ${getToken()}` },
+      });
+      toast.success(
+        enable
+          ? `Uszkodzenie wiadomosci wlaczone dla ${nodeId}`
+          : `Uszkodzenie wiadomosci wylaczone dla ${nodeId}`
+      );
+      fetchNodes();
+    } catch (error) {
+      console.error("Error toggling message corruption:", error);
+      toast.error("Nie udalo sie zmienic stanu uszkodzenia wiadomosci");
+    }
+  };
+
   const onlineCount = nodes.filter((node) => node.online).length;
   const leader = nodes.find((node) => node.leader);
   const lastEvent = events[0];
@@ -169,14 +239,32 @@ const AdminPanel = () => {
   };
 
   const getEventClassName = (eventType) => {
-    if (eventType?.includes("FAILURE")) {
+    if (eventType?.includes("FAILURE") || eventType?.includes("CORRUPTION")) {
       return "border-red-200 bg-red-50 text-red-700";
     }
-    if (eventType?.includes("RECOVERED")) {
+    if (eventType?.includes("RECOVERED") || eventType?.includes("CLEARED")) {
       return "border-emerald-200 bg-emerald-50 text-emerald-700";
+    }
+    if (eventType?.includes("DELAY")) {
+      return "border-amber-200 bg-amber-50 text-amber-700";
     }
     return "border-zinc-200 bg-zinc-50 text-zinc-700";
   };
+
+  const getMetricBarColor = (eventType) => {
+    if (eventType?.includes("FAILURE") || eventType?.includes("CORRUPTION")) {
+      return "bg-red-500";
+    }
+    if (eventType?.includes("RECOVERED") || eventType?.includes("CLEARED")) {
+      return "bg-emerald-500";
+    }
+    if (eventType?.includes("DELAY")) {
+      return "bg-amber-500";
+    }
+    return "bg-sky-500";
+  };
+
+  const maxMetricCount = Math.max(1, ...metrics.map((metric) => metric.count));
 
   if (loading) {
     return (
@@ -192,11 +280,17 @@ const AdminPanel = () => {
         <TabsList className="mb-6">
           <TabsTrigger value="nodes">Monitorowanie węzłów</TabsTrigger>
           <TabsTrigger value="events">Historia zdarzeń</TabsTrigger>
+          <TabsTrigger value="metrics">Metryki</TabsTrigger>
           <TabsTrigger value="users">Panel administratora</TabsTrigger>
         </TabsList>
 
         {/* Nodes Monitoring Tab */}
         <TabsContent value="nodes" className="space-y-4">
+          {!nodesLoading && nodes.length > 0 && !leader && (
+            <div className="rounded-md border border-red-200 bg-red-50 p-3 text-sm font-medium text-red-700">
+              Brak aktywnego lidera - operacje zapisu zadan (RabbitMQ) sa tymczasowo niedostepne.
+            </div>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Monitoring węzłów</CardTitle>
@@ -237,6 +331,8 @@ const AdminPanel = () => {
                       <TableHead>Waga</TableHead>
                       <TableHead>Status</TableHead>
                       <TableHead>Lider</TableHead>
+                      <TableHead>Opóźnienie sieci</TableHead>
+                      <TableHead>Korupcja wiad.</TableHead>
                       <TableHead>Ostatni heartbeat</TableHead>
                       <TableHead className="text-right">Awaria</TableHead>
                     </TableRow>
@@ -254,6 +350,24 @@ const AdminPanel = () => {
                           </span>
                         </TableCell>
                         <TableCell>{node.leader ? "tak" : "nie"}</TableCell>
+                        <TableCell>
+                          {node.networkDelayMs > 0 ? (
+                            <span className="inline-flex rounded-md border px-2 py-1 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
+                              {node.networkDelayMs} ms
+                            </span>
+                          ) : (
+                            "brak"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {node.messageCorruption ? (
+                            <span className="inline-flex rounded-md border px-2 py-1 text-xs font-medium border-red-200 bg-red-50 text-red-700">
+                              aktywna
+                            </span>
+                          ) : (
+                            "brak"
+                          )}
+                        </TableCell>
                         <TableCell>
                           {node.secondsSinceLastSeen === null
                             ? "brak"
@@ -282,6 +396,83 @@ const AdminPanel = () => {
                     ))}
                   </TableBody>
                 </Table>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Symulacja dodatkowych awarii</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <p className="text-sm text-muted-foreground">
+                Oprócz wyłączenia węzła (powyżej) można zasymulować opóźnienie sieciowe lub
+                uszkodzenie przetwarzanej wiadomości na wybranym węźle, aby zobaczyć reakcję systemu.
+              </p>
+              {nodesLoading ? (
+                <div>Ładowanie statusu węzłów...</div>
+              ) : (
+                nodes.map((node) => (
+                  <div key={node.nodeId} className="rounded-md border p-3 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">{node.nodeId}</span>
+                      <div className="flex gap-2">
+                        {node.networkDelayMs > 0 && (
+                          <span className="inline-flex rounded-md border px-2 py-1 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
+                            opóźnienie {node.networkDelayMs} ms
+                          </span>
+                        )}
+                        {node.messageCorruption && (
+                          <span className="inline-flex rounded-md border px-2 py-1 text-xs font-medium border-red-200 bg-red-50 text-red-700">
+                            korupcja wiadomości
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={30000}
+                        step={100}
+                        placeholder="Opóźnienie (ms)"
+                        className="h-9 w-40"
+                        value={delayInputs[node.nodeId] ?? ""}
+                        onChange={(e) =>
+                          setDelayInputs((prev) => ({ ...prev, [node.nodeId]: e.target.value }))
+                        }
+                      />
+                      <Button type="button" variant="outline" onClick={() => handleApplyNetworkDelay(node.nodeId)}>
+                        Ustaw opóźnienie
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        disabled={node.networkDelayMs === 0}
+                        onClick={() => handleSetNetworkDelay(node.nodeId, 0)}
+                      >
+                        Wyczyść opóźnienie
+                      </Button>
+                      {node.messageCorruption ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          onClick={() => handleToggleMessageCorruption(node.nodeId, false)}
+                        >
+                          Wyłącz korupcję wiadomości
+                        </Button>
+                      ) : (
+                        <Button
+                          type="button"
+                          variant="destructive"
+                          onClick={() => handleToggleMessageCorruption(node.nodeId, true)}
+                        >
+                          Wywołaj korupcję wiadomości
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))
               )}
             </CardContent>
           </Card>
@@ -330,6 +521,37 @@ const AdminPanel = () => {
                   )}
                 </TableBody>
               </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Metrics Tab */}
+        <TabsContent value="metrics" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Metryki zdarzeń systemu rozproszonego</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {metricsLoading ? (
+                <div>Ładowanie metryk...</div>
+              ) : metrics.length === 0 ? (
+                <div>Brak danych</div>
+              ) : (
+                metrics.map((metric) => (
+                  <div key={metric.eventType} className="space-y-1">
+                    <div className="flex justify-between text-sm">
+                      <span className="font-medium">{metric.eventType}</span>
+                      <span className="text-muted-foreground">{metric.count}</span>
+                    </div>
+                    <div className="h-2 w-full rounded-full bg-zinc-100">
+                      <div
+                        className={`h-2 rounded-full ${getMetricBarColor(metric.eventType)}`}
+                        style={{ width: `${Math.max(4, (metric.count / maxMetricCount) * 100)}%` }}
+                      />
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
         </TabsContent>

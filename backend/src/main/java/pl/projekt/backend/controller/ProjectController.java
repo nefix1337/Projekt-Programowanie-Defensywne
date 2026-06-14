@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import pl.projekt.backend.dto.CreateProjectRequest;
+import pl.projekt.backend.dto.UpdateProjectRequest;
 import pl.projekt.backend.dto.ProjectMemberResponse;
 import pl.projekt.backend.dto.AddProjectMemberRequest;
 import pl.projekt.backend.model.Project;
@@ -73,14 +74,14 @@ public class ProjectController {
      * Endpoint dostępny tylko dla roli MANAGER.
      *
      * @param id identyfikator projektu
-     * @param project zaktualizowane dane projektu
+     * @param request zaktualizowane dane projektu
      * @return odpowiedź HTTP 200 z zaktualizowanym projektem
      */
     @Operation(summary = "Aktualizacja projektu")
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('MANAGER')")
-    public ResponseEntity<Project> updateProject(@PathVariable UUID id, @Valid @RequestBody Project project) {
-        return ResponseEntity.ok(projectService.updateProject(id, project));
+    public ResponseEntity<Project> updateProject(@PathVariable UUID id, @Valid @RequestBody UpdateProjectRequest request) {
+        return ResponseEntity.ok(projectService.updateProject(id, request));
     }
 
     /**
