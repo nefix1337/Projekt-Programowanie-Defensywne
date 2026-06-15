@@ -2,6 +2,7 @@ package com.bsr.service;
 
 import com.bsr.config.TaskRabbitMqConfig;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@DisplayName("Testy serwisu LeaderElectionService")
 @ExtendWith(MockitoExtension.class)
 class LeaderElectionServiceTest {
 
@@ -65,6 +67,7 @@ class LeaderElectionServiceTest {
     }
 
     @Test
+    @DisplayName("Inicjalizacja tworzy tabelę kandydatów i dodaje kolumny do wstrzykiwania awarii")
     void initialize_CreatesTableAndAddsFaultInjectionColumns() {
         service.initialize();
 
@@ -72,6 +75,7 @@ class LeaderElectionServiceTest {
     }
 
     @Test
+    @DisplayName("Węzeł staje się liderem, gdy ma najwyższą wagę i jest aktywny")
     void updateLeadership_BecomesLeader_WhenHighestWeightAndAlive() {
         stubForcedDown(false);
         stubCurrentLeader(Optional.of("node-1"));
@@ -88,6 +92,7 @@ class LeaderElectionServiceTest {
     }
 
     @Test
+    @DisplayName("Węzeł ustępuje z roli lidera, gdy innym węzłem staje się lider")
     void updateLeadership_StepsDown_WhenAnotherNodeBecomesLeader() {
         leaderFlag().set(true);
         stubForcedDown(false);
@@ -101,6 +106,7 @@ class LeaderElectionServiceTest {
     }
 
     @Test
+    @DisplayName("Zatrzymanie nasłuchiwania i przerwanie działania, gdy węzeł jest wymuszony do wyłączenia")
     void updateLeadership_StopsListenersAndReturnsEarly_WhenForcedDown() {
         leaderFlag().set(true);
         stubForcedDown(true);
@@ -114,6 +120,7 @@ class LeaderElectionServiceTest {
     }
 
     @Test
+    @DisplayName("Węzeł pozostaje obserwatorem, gdy inny węzeł ma wyższą wagę")
     void updateLeadership_RemainsFollower_WhenAnotherNodeHasHigherWeight() {
         stubForcedDown(false);
         stubCurrentLeader(Optional.of("node-2"));
@@ -126,6 +133,7 @@ class LeaderElectionServiceTest {
     }
 
     @Test
+    @DisplayName("Wyrejestrowanie zatrzymuje nasłuchiwanie i usuwa wpis kandydata")
     void unregister_StopsListenersAndRemovesCandidateRow() {
         when(listenerContainer.isRunning()).thenReturn(true);
 

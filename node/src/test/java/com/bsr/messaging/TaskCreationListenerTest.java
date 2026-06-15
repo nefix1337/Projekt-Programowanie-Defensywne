@@ -3,6 +3,7 @@ package com.bsr.messaging;
 import com.bsr.model.Task;
 import com.bsr.service.TaskCreationService;
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -14,12 +15,14 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
+@DisplayName("Testy listenera TaskCreationListener")
 @ExtendWith(MockitoExtension.class)
 class TaskCreationListenerTest {
     @Mock
     private TaskCreationService taskCreationService;
 
     @Test
+    @DisplayName("Obsługa polecenia utworzenia zadania - sukces")
     void handle_ShouldReturnSuccess_WhenTaskIsCreated() {
         CreateTaskCommand command = new CreateTaskCommand();
         Task task = new Task();
@@ -36,6 +39,7 @@ class TaskCreationListenerTest {
     }
 
     @Test
+    @DisplayName("Obsługa polecenia utworzenia zadania - błąd przy braku powiązanego elementu")
     void handle_ShouldReturnFailure_WhenReferencedEntityIsMissing() {
         CreateTaskCommand command = new CreateTaskCommand();
         TaskCreationListener listener = new TaskCreationListener(taskCreationService);

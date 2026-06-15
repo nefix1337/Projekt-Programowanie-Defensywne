@@ -15,6 +15,7 @@ import com.bsr.repository.TaskCommentRepository;
 import com.bsr.repository.TaskRepository;
 import com.bsr.repository.UserRepository;
 import jakarta.persistence.EntityNotFoundException;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -34,6 +35,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
+@DisplayName("Testy serwisu TaskCreationService")
 @ExtendWith(MockitoExtension.class)
 class TaskCreationServiceTest {
 
@@ -59,6 +61,7 @@ class TaskCreationServiceTest {
     private TaskCreationService taskCreationService;
 
     @Test
+    @DisplayName("Utworzenie zadania zapisuje je i rejestruje zdarzenie")
     void createTask_PersistsTaskAndRecordsEvent() {
         UUID projectId = UUID.randomUUID();
         CreateTaskCommand command = new CreateTaskCommand();
@@ -97,6 +100,7 @@ class TaskCreationServiceTest {
     }
 
     @Test
+    @DisplayName("Utworzenie zadania zgłasza wyjątek, gdy projekt nie istnieje")
     void createTask_ThrowsWhenProjectMissing() {
         CreateTaskCommand command = new CreateTaskCommand();
         command.setProjectId(UUID.randomUUID());
@@ -111,6 +115,7 @@ class TaskCreationServiceTest {
     }
 
     @Test
+    @DisplayName("Utworzenie zadania propaguje błąd wstrzyknięty przez mechanizm awarii")
     void createTask_PropagatesFaultInjectionFailure() {
         doThrow(new IllegalStateException("Simulated message corruption while processing: CREATE_TASK"))
                 .when(faultInjectionService).applyFaults("CREATE_TASK");
@@ -125,6 +130,7 @@ class TaskCreationServiceTest {
     }
 
     @Test
+    @DisplayName("Aktualizacja zadania zmienia podane pola i rejestruje zdarzenie")
     void updateTask_UpdatesProvidedFieldsAndRecordsEvent() {
         Task existing = new Task();
         existing.setId(5L);
@@ -156,6 +162,7 @@ class TaskCreationServiceTest {
     }
 
     @Test
+    @DisplayName("Aktualizacja zadania zgłasza wyjątek, gdy zadanie nie istnieje")
     void updateTask_ThrowsWhenTaskMissing() {
         UpdateTaskCommand command = new UpdateTaskCommand();
         command.setTaskId(99L);
@@ -166,6 +173,7 @@ class TaskCreationServiceTest {
     }
 
     @Test
+    @DisplayName("Usunięcie zadania usuwa je wraz z komentarzami i rejestruje zdarzenie")
     void deleteTask_RemovesTaskAndCommentsAndRecordsEvent() {
         Task task = new Task();
         task.setId(7L);
@@ -180,6 +188,7 @@ class TaskCreationServiceTest {
     }
 
     @Test
+    @DisplayName("Zmiana statusu zadania aktualizuje status i rejestruje zdarzenie")
     void setTaskStatus_UpdatesStatusAndRecordsEvent() {
         Task task = new Task();
         task.setId(8L);
@@ -198,6 +207,7 @@ class TaskCreationServiceTest {
     }
 
     @Test
+    @DisplayName("Dodanie komentarza zapisuje go i rejestruje zdarzenie")
     void addComment_SavesCommentAndRecordsEvent() {
         Task task = new Task();
         task.setId(9L);

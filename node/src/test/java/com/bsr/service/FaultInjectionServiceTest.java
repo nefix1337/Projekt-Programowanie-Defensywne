@@ -1,6 +1,7 @@
 package com.bsr.service;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatchers;
@@ -23,6 +24,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@DisplayName("Testy serwisu FaultInjectionService")
 @ExtendWith(MockitoExtension.class)
 class FaultInjectionServiceTest {
 
@@ -61,6 +63,7 @@ class FaultInjectionServiceTest {
     }
 
     @Test
+    @DisplayName("Brak akcji, gdy żadne awarie nie są skonfigurowane")
     void applyFaults_DoesNothing_WhenNoFaultsConfigured() throws SQLException {
         stubFaultState(0, false);
 
@@ -70,6 +73,7 @@ class FaultInjectionServiceTest {
     }
 
     @Test
+    @DisplayName("Wprowadzenie opóźnienia sieciowego i zarejestrowanie zdarzenia, gdy skonfigurowano opóźnienie")
     void applyFaults_SleepsAndRecordsEvent_WhenNetworkDelayConfigured() throws SQLException {
         stubFaultState(50, false);
 
@@ -82,6 +86,7 @@ class FaultInjectionServiceTest {
     }
 
     @Test
+    @DisplayName("Zgłoszenie wyjątku i zarejestrowanie zdarzenia, gdy skonfigurowano uszkodzenie wiadomości")
     void applyFaults_ThrowsAndRecordsEvent_WhenMessageCorruptionConfigured() throws SQLException {
         stubFaultState(0, true);
 
@@ -93,6 +98,7 @@ class FaultInjectionServiceTest {
     }
 
     @Test
+    @DisplayName("Zastosowanie opóźnienia przed zgłoszeniem wyjątku, gdy skonfigurowano oba rodzaje awarii")
     void applyFaults_AppliesDelayBeforeThrowingOnCorruption_WhenBothConfigured() throws SQLException {
         stubFaultState(20, true);
 
